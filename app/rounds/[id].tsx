@@ -8,12 +8,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useToast } from '@/components/Toast';
 import { trackEvent } from '@/services/analytics';
 import { logError } from '@/services/errorReporting';
+import { deletePhotoDirForRound } from '@/services/photoStorage';
 import { recomputeSnapshotsFromDate } from '@/services/snapshotRecompute';
 import { HandicapMovementCard } from '@/components/round-detail/HandicapMovementCard';
 import { HeroHeader } from '@/components/round-detail/HeroHeader';
 import { Scorecard } from '@/components/round-detail/Scorecard';
 import type { HoleData } from '@/components/round-detail/scorecardData';
 import { NotesSection } from '@/components/round-detail/NotesSection';
+import { PhotosSection } from '@/components/round-detail/PhotosSection';
 import { PartialDataBanner } from '@/components/round-detail/PartialDataBanner';
 import { RoundActions } from '@/components/round-detail/RoundActions';
 import { SummaryRow } from '@/components/round-detail/SummaryRow';
@@ -120,7 +122,11 @@ export default function RoundDetail(): JSX.Element {
     try {
       const db = getDb();
       const playedAt = data.round.played_at;
-      deleteRoundRow(db, data.round.id);
+      const roundId = data.round.id;
+      deleteRoundRow(db, roundId);
+      // Photo rows cascade-delete via FK; the on-disk directory is cleaned
+      // separately. Fire and forget — UX shouldn't wait on file I/O.
+      void deletePhotoDirForRound(roundId);
       recomputeSnapshotsFromDate(db, data.round.player_id, playedAt);
       queryClient.invalidateQueries();
       trackEvent('round_deleted', {});
@@ -248,6 +254,10 @@ export default function RoundDetail(): JSX.Element {
                 </Text>
               </View>
             ) : null}
+          </View>
+
+          <View style={{ marginTop: 32 }}>
+            <PhotosSection roundId={round.id} />
           </View>
 
           <View style={{ marginTop: 32 }}>

@@ -1,3 +1,5 @@
+import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import type { JSX } from 'react';
 import { Text, View } from 'react-native';
 import Svg, {
@@ -35,6 +37,9 @@ export interface ShareableRoundCardProps {
   highlight: Highlight;
   /** When true, render a small "9 holes" subtitle under the score. */
   nineHole?: boolean;
+  /** Optional local file uri for a personal background photo, masked into the
+   *  upper third of the card. Renders nothing if undefined or null. */
+  backgroundPhotoUri?: string | null;
 }
 
 function relativeToParLabel(diff: number): {
@@ -132,6 +137,8 @@ export function ShareableRoundCard(props: ShareableRoundCardProps): JSX.Element 
   const puttsValue = putts !== null && putts !== undefined ? String(putts) : '—';
   const puttsDimmed = putts === null || putts === undefined;
 
+  const PHOTO_HEIGHT = Math.round(SHARE_CANVAS.height * 0.46);
+
   return (
     <View
       style={{
@@ -141,6 +148,39 @@ export function ShareableRoundCard(props: ShareableRoundCardProps): JSX.Element 
         overflow: 'hidden',
       }}
     >
+      {/* Optional personal background photo, faded to cream above the score */}
+      {props.backgroundPhotoUri !== undefined && props.backgroundPhotoUri !== null ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: PHOTO_HEIGHT,
+            opacity: 0.55,
+          }}
+        >
+          <Image
+            source={{ uri: props.backgroundPhotoUri }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+            transition={0}
+          />
+          <LinearGradient
+            colors={['rgba(250, 246, 238, 0)', CREAM]}
+            locations={[0.55, 1]}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+        </View>
+      ) : null}
+
       {/* Soft Masters-green radial glow + paper grain overlay */}
       <View
         pointerEvents="none"

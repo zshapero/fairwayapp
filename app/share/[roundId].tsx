@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { type JSX, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,6 +19,7 @@ import {
   buildShareData,
   captureAndShare,
   captureAndSaveToPhotos,
+  listShareablePhotoUris,
 } from '@/services/roundShare';
 import { trackEvent } from '@/services/analytics';
 import { logError } from '@/services/errorReporting';
@@ -30,10 +32,24 @@ const PREVIEW_HEIGHT = SHARE_CANVAS.height * PREVIEW_SCALE;
 export default function ShareRound(): JSX.Element {
   const params = useLocalSearchParams<{ roundId: string }>();
   const roundId = Number.parseInt(params.roundId ?? '', 10);
-  const data = useMemo(() => {
+  const baseData = useMemo(() => {
     if (Number.isNaN(roundId)) return null;
     return buildShareData(roundId);
   }, [roundId]);
+  const photoUris = useMemo(
+    () => (Number.isNaN(roundId) ? [] : listShareablePhotoUris(roundId)),
+    [roundId],
+  );
+  const [selectedPhotoUri, setSelectedPhotoUri] = useState<string | null>(
+    baseData?.backgroundPhotoUri ?? null,
+  );
+  const data = useMemo(
+    () =>
+      baseData === null
+        ? null
+        : { ...baseData, backgroundPhotoUri: selectedPhotoUri },
+    [baseData, selectedPhotoUri],
+  );
 
   const captureRef = useRef<View | null>(null);
   const [busy, setBusy] = useState<'share' | 'save' | null>(null);
@@ -154,6 +170,78 @@ export default function ShareRound(): JSX.Element {
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 32, alignItems: 'center' }}>
+          {photoUris.length >= 2 ? (
+            <View style={{ width: '100%', paddingHorizontal: 24, marginTop: 4 }}>
+              <Text
+                style={{
+                  fontFamily: 'Inter_500Medium',
+                  fontSize: 11,
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                  color: MUTED_TEXT,
+                  marginBottom: 8,
+                }}
+              >
+                Use which photo as background?
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8 }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSelectedPhotoUri(null)}
+                  style={({ pressed }) => ({
+                    width: 56,
+                    height: 56,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(15, 23, 42, 0.04)',
+                    borderWidth: selectedPhotoUri === null ? 2 : 0,
+                    borderColor: MASTERS_GREEN,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      fontFamily: 'Inter_500Medium',
+                      fontSize: 10,
+                      color: MUTED_TEXT,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.6,
+                    }}
+                  >
+                    None
+                  </Text>
+                </Pressable>
+                {photoUris.map((uri) => (
+                  <Pressable
+                    key={uri}
+                    accessibilityRole="button"
+                    onPress={() => setSelectedPhotoUri(uri)}
+                    style={({ pressed }) => ({
+                      width: 56,
+                      height: 56,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      borderWidth: selectedPhotoUri === uri ? 2 : 0,
+                      borderColor: MASTERS_GREEN,
+                      opacity: pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <Image
+                      source={{ uri }}
+                      style={{ width: '100%', height: '100%' }}
+                      contentFit="cover"
+                    />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
           {/* Soft glow + scaled visible preview */}
           <View
             style={{
