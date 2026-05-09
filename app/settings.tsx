@@ -247,16 +247,20 @@ export default function Settings(): JSX.Element {
 
         <SettingsSection label="About">
           <SettingsRow
+            title="About Fairway"
+            onPress={() => router.push('/settings/about')}
+          />
+          <SettingsRow
             title="Send feedback"
             onPress={() => Linking.openURL('mailto:hello@fairway.app')}
           />
           <SettingsRow
             title="Privacy policy"
-            onPress={() => Linking.openURL('https://fairway.app/privacy')}
+            onPress={() => router.push('/settings/legal?tab=privacy')}
           />
           <SettingsRow
             title="Terms of service"
-            onPress={() => Linking.openURL('https://fairway.app/terms')}
+            onPress={() => router.push('/settings/legal?tab=terms')}
             isLast
           />
         </SettingsSection>

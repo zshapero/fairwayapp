@@ -1,4 +1,14 @@
-# Privacy Policy
+/**
+ * NOTE: This file mirrors `/assets/legal/privacy.md`. The .md file is the
+ * canonical source for human review (and what gets shipped on a future
+ * web privacy page). This TS export is what the app actually bundles for
+ * the Settings → Legal screen.
+ *
+ * Keep both in sync. If you change one, change the other. There is a
+ * verification test in `src/legal/__tests__/legalContent.test.ts`.
+ */
+
+export const PRIVACY_MD = `# Privacy Policy
 
 _Last updated: [DATE TO BE SET AT LAUNCH]_
 
@@ -17,7 +27,7 @@ This policy explains what we collect, how we use it, and what choices you have. 
 
 ### Sent off your device
 
-- **Anonymous product analytics.** We send small, anonymized event records to PostHog so we can understand which features get used. These events include things like "a round was saved" or "the paywall was shown" along with non-identifying numeric metadata (like the gross score on a round). They never include your name, email, course names, location, or anything you've typed. PostHog assigns a random anonymous id; if you complete onboarding, that id is paired with a non-PII reference like `player-1` so we can deduplicate your sessions across launches.
+- **Anonymous product analytics.** We send small, anonymized event records to PostHog so we can understand which features get used. These events include things like "a round was saved" or "the paywall was shown" along with non-identifying numeric metadata (like the gross score on a round). They never include your name, email, course names, location, or anything you've typed. PostHog assigns a random anonymous id; if you complete onboarding, that id is paired with a non-PII reference like \`player-1\` so we can deduplicate your sessions across launches.
 - **Crash reports.** When the app crashes, Sentry collects a stack trace and basic device metadata (OS version, device model, locale) so we can fix bugs. Stack traces may incidentally contain values that were live in memory at the time of the crash. We do not deliberately send your golf data to Sentry.
 - **Course searches.** When you search for a course or import one, we send your search query (and, after import, the course's identifier) to golfcourseapi.com so they can return matching courses. Your name and any identifier we hold for you are never sent.
 - **Weather lookups.** When you save a round, we send the latitude / longitude of the course and the date played to open-meteo.com to fetch the weather for that round. No identifier of yours is sent.
@@ -59,7 +69,7 @@ Because virtually all of your data lives on your device, you have direct control
 
 For the small amount of data that goes to third parties, you can also:
 
-- **Opt out of analytics and crash reporting.** A toggle in Settings is on the roadmap for the public launch. In the meantime, building Fairway from source without `EXPO_PUBLIC_POSTHOG_API_KEY` and `EXPO_PUBLIC_SENTRY_DSN` set will disable both.
+- **Opt out of analytics and crash reporting.** A toggle in Settings is on the roadmap for the public launch. In the meantime, building Fairway from source without \`EXPO_PUBLIC_POSTHOG_API_KEY\` and \`EXPO_PUBLIC_SENTRY_DSN\` set will disable both.
 - **Manage your subscription.** Use the App Store's Subscription settings on your device.
 
 If you live in a jurisdiction that grants additional rights (such as the EU under GDPR or California under CCPA), you may also request access, correction, deletion, or restriction of any personal data we hold. Because we hold so little, most of these requests amount to "delete the analytics distinct id." Contact us using the details below and we'll forward the request to the relevant service.
@@ -81,3 +91,4 @@ Questions, concerns, or requests:
 **hello@fairway.app**
 
 You can also reach us via Settings → About → Send feedback inside the app.
+`;
