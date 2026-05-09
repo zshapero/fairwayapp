@@ -20,7 +20,7 @@ export function recordSearch(db: Db, query: string): void {
   );
   // Trim to MAX_RECENT entries.
   const all = db.getAllSync<RecentSearch>(
-    'SELECT id, query, searched_at FROM recent_searches ORDER BY searched_at DESC',
+    'SELECT id, query, searched_at FROM recent_searches ORDER BY searched_at DESC, id DESC',
     [],
   );
   if (all.length > MAX_RECENT) {
@@ -35,7 +35,7 @@ export function recordSearch(db: Db, query: string): void {
 export function listRecentSearches(db: Db): RecentSearch[] {
   return db.getAllSync<RecentSearch>(
     `SELECT id, query, searched_at FROM recent_searches
-       ORDER BY searched_at DESC LIMIT ${MAX_RECENT}`,
+       ORDER BY searched_at DESC, id DESC LIMIT ${MAX_RECENT}`,
     [],
   );
 }
