@@ -7,6 +7,7 @@ import {
 } from '@/core/db/repositories/rounds';
 import type { WeatherCondition, WindDirection } from '@/core/db/types';
 import { logError } from './errorReporting';
+import { timedAsync } from './perfLogging';
 import {
   aggregateHourly,
   celsiusToF,
@@ -144,6 +145,14 @@ const sleep = (ms: number): Promise<void> =>
  * the round so we don't retry endlessly.
  */
 export async function backfillRoundWeather(): Promise<{
+  fetched: number;
+  skipped: number;
+  failed: number;
+}> {
+  return timedAsync('weather.backfill', () => backfillImpl(), 5000);
+}
+
+async function backfillImpl(): Promise<{
   fetched: number;
   skipped: number;
   failed: number;

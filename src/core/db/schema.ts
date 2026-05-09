@@ -1,5 +1,5 @@
 /** Schema version tracked in the schema_version table. Bump when migrations are added. */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /** All DDL needed to bring an empty database up to {@link SCHEMA_VERSION}. */
 export const SCHEMA_SQL = `
@@ -130,4 +130,18 @@ CREATE TABLE IF NOT EXISTS round_photos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_round_photos_round ON round_photos(round_id);
+
+-- v6 — composite indexes that cover the most common query shapes:
+--   * listRoundsForPlayer / getRoundsForPlayerInDateRange / getRoundsForPlayerGroupedByMonth all
+--     filter by player_id and ORDER BY played_at, so a covering composite is faster than the
+--     existing single-column idx_rounds_player.
+--   * listRoundsAtCourseForPlayer + the course-stats aggregates filter by course_id (and player_id).
+--   * hasLoggedRecently filters drill_log by (player_id, recommendation_key, logged_at).
+CREATE INDEX IF NOT EXISTS idx_rounds_player_played_at
+  ON rounds(player_id, played_at DESC);
+CREATE INDEX IF NOT EXISTS idx_rounds_course ON rounds(course_id);
+CREATE INDEX IF NOT EXISTS idx_rounds_course_player
+  ON rounds(course_id, player_id);
+CREATE INDEX IF NOT EXISTS idx_drill_log_player_key
+  ON drill_log(player_id, recommendation_key, logged_at DESC);
 `;

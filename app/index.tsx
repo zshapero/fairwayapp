@@ -17,6 +17,7 @@ import { getSnapshotsForPlayer } from '@/core/db/repositories/handicapSnapshots'
 import { listPlayers } from '@/core/db/repositories/players';
 import { listRoundsForPlayer } from '@/core/db/repositories/rounds';
 import { listTeeHoles } from '@/core/db/repositories/teeHoles';
+import { timed } from '@/services/perfLogging';
 import { ACCENT_GOLD, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
 const HOUR_GREETINGS: { from: number; text: string }[] = [
@@ -110,7 +111,7 @@ function loadHome(): HomeData {
 }
 
 export default function Home(): JSX.Element {
-  const data = useMemo(() => loadHome(), []);
+  const data = useMemo(() => timed('home.load', () => loadHome()), []);
   const greeting = greetingForHour(new Date().getHours());
   const { refreshControl } = useRefresh();
 
