@@ -4,20 +4,38 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDb } from '@/core/db/database';
 import { createPlayer, listPlayers, updatePlayer } from '@/core/db/repositories/players';
+import {
+  sanitizeName,
+  validateHandicapInput,
+} from '@/core/scoring/inputValidation';
 import { ACCENT_GOLD, CREAM, DIVIDER, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
 export default function AboutYou(): JSX.Element {
   const existing = listPlayers(getDb())[0] ?? null;
   const [name, setName] = useState<string>(existing?.name ?? '');
   const [handicap, setHandicap] = useState<string>('');
+  const [handicapError, setHandicapError] = useState<string>('');
 
   const onContinue = (): void => {
+    // Validate handicap: empty is allowed (skip), otherwise must be in range.
+    const handicapResult = validateHandicapInput(handicap);
+    if (!handicapResult.ok && handicapResult.message !== '') {
+      setHandicapError(handicapResult.message);
+      return;
+    }
+    setHandicapError('');
+    const cleanName = sanitizeName(name);
+    const finalName = cleanName === '' ? 'You' : cleanName;
     const db = getDb();
     if (existing === null) {
-      createPlayer(db, { name: name.trim() === '' ? 'You' : name.trim() });
-    } else if (name.trim() !== '' && name.trim() !== existing.name) {
-      updatePlayer(db, existing.id, { name: name.trim() });
+      createPlayer(db, { name: finalName });
+    } else if (cleanName !== '' && cleanName !== existing.name) {
+      updatePlayer(db, existing.id, { name: cleanName });
     }
+    // The handicap value (if provided) is intentionally not persisted yet —
+    // the player record doesn't store a manual handicap override; it's
+    // computed from snapshots. This is documented in #5's call-outs.
+    void handicapResult.value;
     router.push('/onboarding/home-course');
   };
 
@@ -102,7 +120,10 @@ export default function AboutYou(): JSX.Element {
           </Text>
           <TextInput
             value={handicap}
-            onChangeText={setHandicap}
+            onChangeText={(t) => {
+              setHandicap(t);
+              if (handicapError !== '') setHandicapError('');
+            }}
             keyboardType="decimal-pad"
             placeholder="e.g., 14.2 or leave blank"
             placeholderTextColor="rgba(15, 23, 42, 0.4)"
@@ -112,10 +133,22 @@ export default function AboutYou(): JSX.Element {
               color: '#0F172A',
               paddingVertical: 8,
               borderBottomWidth: 0.5,
-              borderBottomColor: DIVIDER,
+              borderBottomColor: handicapError !== '' ? '#A6553D' : DIVIDER,
               marginTop: 8,
             }}
           />
+          {handicapError !== '' ? (
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 12,
+                color: '#A6553D',
+                marginTop: 6,
+              }}
+            >
+              {handicapError}
+            </Text>
+          ) : null}
         </View>
       </View>
 

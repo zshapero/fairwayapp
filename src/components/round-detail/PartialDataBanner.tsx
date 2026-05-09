@@ -2,7 +2,24 @@ import type { JSX } from 'react';
 import { Text, View } from 'react-native';
 import { ACCENT_GOLD, ACCENT_GOLD_MUTED } from '@/theme/colors';
 
-export function PartialDataBanner(): JSX.Element {
+export type PartialDataReason = 'no-per-hole' | 'course-missing' | 'tee-missing';
+
+interface PartialDataBannerProps {
+  reason?: PartialDataReason;
+}
+
+const COPY: Record<PartialDataReason, string> = {
+  'no-per-hole':
+    "Per-hole data wasn't available for this course. Scores shown are totals only.",
+  'course-missing':
+    "We couldn't find this round's course in your saved courses. The round is still here.",
+  'tee-missing':
+    "Tee details aren't available for this round, so some stats may be missing.",
+};
+
+export function PartialDataBanner({
+  reason = 'no-per-hole',
+}: PartialDataBannerProps): JSX.Element {
   return (
     <View
       style={{
@@ -23,8 +40,7 @@ export function PartialDataBanner(): JSX.Element {
           color: ACCENT_GOLD_MUTED,
         }}
       >
-        Per-hole data wasn&apos;t available for this course. Scores shown are
-        totals only.
+        {COPY[reason]}
       </Text>
     </View>
   );

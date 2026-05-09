@@ -42,6 +42,10 @@ interface LoadedRound {
   holes: HoleData[];
   countedAs: number;
   movement: ReturnType<typeof computeMovement>;
+  /** True when the parent course no longer exists in the user's library. */
+  courseMissing: boolean;
+  /** True when the round's tee row no longer exists. */
+  teeMissing: boolean;
 }
 
 function loadRound(roundId: number): LoadedRound | null {
@@ -85,6 +89,8 @@ function loadRound(roundId: number): LoadedRound | null {
     holes,
     countedAs: round.adjusted_gross_score ?? holes.reduce((s, h) => s + (h.strokes ?? 0), 0),
     movement,
+    courseMissing: course === null,
+    teeMissing: tee === null,
   };
 }
 
@@ -218,7 +224,15 @@ export default function RoundDetail(): JSX.Element {
           }}
         />
 
-        {!hasPerHoleData ? <PartialDataBanner /> : null}
+        {data.courseMissing ? (
+          <PartialDataBanner reason="course-missing" />
+        ) : null}
+        {!data.courseMissing && data.teeMissing ? (
+          <PartialDataBanner reason="tee-missing" />
+        ) : null}
+        {!hasPerHoleData && !data.courseMissing && !data.teeMissing ? (
+          <PartialDataBanner reason="no-per-hole" />
+        ) : null}
 
         <View style={{ paddingHorizontal: 20 }}>
           {/* Summary row */}
