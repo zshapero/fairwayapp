@@ -63,6 +63,18 @@ export function runMigrations(db: Db): void {
     'preferred_tee_id',
     'preferred_tee_id INTEGER',
   );
+  ensureColumn(
+    db,
+    'players',
+    'onboarded',
+    'onboarded INTEGER NOT NULL DEFAULT 0',
+  );
+  ensureColumn(
+    db,
+    'players',
+    'home_course_id',
+    'home_course_id INTEGER',
+  );
 
   const current = db.getFirstSync<{ version: number }>(
     'SELECT version FROM schema_version LIMIT 1',

@@ -15,7 +15,8 @@ export interface PlayerInput {
 const SELECT = `SELECT
   id, name, email, gender, created_at, updated_at,
   subscription_tier, subscription_started_at, subscription_expires_at,
-  preferred_units, time_format, preferred_tee_id
+  preferred_units, time_format, preferred_tee_id,
+  onboarded, home_course_id
 FROM players`;
 
 export function createPlayer(db: Db, input: PlayerInput): Player {
@@ -110,6 +111,34 @@ export function updatePlayerSubscription(
       new Date().toISOString(),
       id,
     ],
+  );
+  return getPlayer(db, id);
+}
+
+export function setOnboardingComplete(
+  db: Db,
+  id: number,
+  homeCourseId: number | null,
+): Player | null {
+  const existing = getPlayer(db, id);
+  if (existing === null) return null;
+  db.runSync(
+    'UPDATE players SET onboarded = 1, home_course_id = ?, updated_at = ? WHERE id = ?',
+    [homeCourseId, new Date().toISOString(), id],
+  );
+  return getPlayer(db, id);
+}
+
+export function setHomeCourse(
+  db: Db,
+  id: number,
+  courseId: number | null,
+): Player | null {
+  const existing = getPlayer(db, id);
+  if (existing === null) return null;
+  db.runSync(
+    'UPDATE players SET home_course_id = ?, updated_at = ? WHERE id = ?',
+    [courseId, new Date().toISOString(), id],
   );
   return getPlayer(db, id);
 }

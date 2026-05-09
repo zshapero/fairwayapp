@@ -21,6 +21,8 @@ export interface Player {
   preferred_units: PreferredUnits;
   time_format: TimeFormat;
   preferred_tee_id: number | null;
+  onboarded: 0 | 1;
+  home_course_id: number | null;
 }
 
 export interface Course {
@@ -103,6 +105,7 @@ export const DATA_TABLES = [
   'hole_scores',
   'handicap_snapshots',
   'drill_log',
+  'recent_searches',
 ] as const;
 
 export type DataTable = (typeof DATA_TABLES)[number];

@@ -19,10 +19,14 @@ export function RoundActions({
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {
       /* haptics unavailable — ignore */
     });
-    Alert.alert('Delete this round? This cannot be undone.', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: onDelete },
-    ]);
+    Alert.alert(
+      'Delete this round?',
+      "Your handicap will recalculate. This can't be undone.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: onDelete },
+      ],
+    );
   };
   return (
     <Animated.View

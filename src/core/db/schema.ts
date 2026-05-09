@@ -1,5 +1,5 @@
 /** Schema version tracked in the schema_version table. Bump when migrations are added. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** All DDL needed to bring an empty database up to {@link SCHEMA_VERSION}. */
 export const SCHEMA_SQL = `
@@ -110,4 +110,12 @@ CREATE TABLE IF NOT EXISTS drill_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_drill_log_player ON drill_log(player_id);
+
+CREATE TABLE IF NOT EXISTS recent_searches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  query TEXT NOT NULL,
+  searched_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_recent_searches_at ON recent_searches(searched_at DESC);
 `;
