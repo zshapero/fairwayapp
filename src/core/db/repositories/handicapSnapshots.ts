@@ -45,6 +45,30 @@ export function listSnapshotsForPlayer(db: Db, playerId: number): HandicapSnapsh
   );
 }
 
+/**
+ * Snapshots for a player ordered chronologically (oldest first), suitable
+ * for charting. When {@link sinceDays} is provided, only snapshots whose
+ * calculated_at is within the trailing window are returned.
+ */
+export function getSnapshotsForPlayer(
+  db: Db,
+  playerId: number,
+  sinceDays?: number,
+): HandicapSnapshot[] {
+  if (sinceDays === undefined) {
+    return db.getAllSync<HandicapSnapshot>(
+      `${SELECT} WHERE player_id = ? ORDER BY calculated_at ASC, id ASC`,
+      [playerId],
+    );
+  }
+  const cutoff = new Date(Date.now() - sinceDays * 86_400_000).toISOString();
+  return db.getAllSync<HandicapSnapshot>(
+    `${SELECT} WHERE player_id = ? AND calculated_at >= ?
+     ORDER BY calculated_at ASC, id ASC`,
+    [playerId, cutoff],
+  );
+}
+
 export function countHandicapSnapshots(db: Db): number {
   const r = db.getFirstSync<{ c: number }>(
     'SELECT COUNT(*) AS c FROM handicap_snapshots',

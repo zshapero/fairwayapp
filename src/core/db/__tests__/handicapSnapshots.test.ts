@@ -8,6 +8,7 @@ import {
   countHandicapSnapshots,
   createHandicapSnapshot,
   getLatestSnapshot,
+  getSnapshotsForPlayer,
   listSnapshotsForPlayer,
 } from '../repositories/handicapSnapshots';
 
@@ -33,6 +34,39 @@ describe('handicap_snapshots repository', () => {
     expect(list).toHaveLength(2);
     expect(list[0].handicap_index).toBe(14.0);
     expect(countHandicapSnapshots(db)).toBe(2);
+  });
+
+  it('returns snapshots oldest-first via getSnapshotsForPlayer (no window)', () => {
+    const db = createTestDb();
+    const p = createPlayer(db, { name: 'P' });
+    // Insert two snapshots a few ms apart so calculated_at differs.
+    createHandicapSnapshot(db, { player_id: p.id, handicap_index: 12.0, rounds_used_count: 5 });
+    createHandicapSnapshot(db, { player_id: p.id, handicap_index: 11.0, rounds_used_count: 6 });
+    const all = getSnapshotsForPlayer(db, p.id);
+    expect(all).toHaveLength(2);
+    expect(all[0].handicap_index).toBe(12.0);
+    expect(all[1].handicap_index).toBe(11.0);
+  });
+
+  it('filters by sinceDays window', () => {
+    const db = createTestDb();
+    const p = createPlayer(db, { name: 'P' });
+    // Insert a snapshot, then back-date it 100 days using direct SQL.
+    const oldSnap = createHandicapSnapshot(db, {
+      player_id: p.id,
+      handicap_index: 20.0,
+      rounds_used_count: 3,
+    });
+    const oldDate = new Date(Date.now() - 100 * 86_400_000).toISOString();
+    db.runSync('UPDATE handicap_snapshots SET calculated_at = ? WHERE id = ?', [
+      oldDate,
+      oldSnap.id,
+    ]);
+    createHandicapSnapshot(db, { player_id: p.id, handicap_index: 15.0, rounds_used_count: 8 });
+    const last30 = getSnapshotsForPlayer(db, p.id, 30);
+    expect(last30).toHaveLength(1);
+    expect(last30[0].handicap_index).toBe(15.0);
+    expect(getSnapshotsForPlayer(db, p.id, 365)).toHaveLength(2);
   });
 
   it('SET NULLs triggering_round_id when the round is deleted', () => {
