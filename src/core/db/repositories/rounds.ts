@@ -65,6 +65,48 @@ export function updateRoundResults(
   return getRound(db, id);
 }
 
+export interface RoundPatch {
+  notes?: string | null;
+  played_at?: string;
+  num_holes_played?: number;
+  pcc?: number;
+  course_handicap?: number;
+  adjusted_gross_score?: number | null;
+  score_differential?: number | null;
+}
+
+/**
+ * Apply a partial update to a round. Only the fields present in {@link patch}
+ * are written; the rest are preserved.
+ */
+export function updateRound(db: Db, id: number, patch: RoundPatch): Round | null {
+  const existing = getRound(db, id);
+  if (existing === null) return null;
+  const next = { ...existing, ...patch };
+  db.runSync(
+    `UPDATE rounds SET
+       notes = ?,
+       played_at = ?,
+       num_holes_played = ?,
+       pcc = ?,
+       course_handicap = ?,
+       adjusted_gross_score = ?,
+       score_differential = ?
+     WHERE id = ?`,
+    [
+      next.notes ?? null,
+      next.played_at,
+      next.num_holes_played,
+      next.pcc,
+      next.course_handicap,
+      next.adjusted_gross_score ?? null,
+      next.score_differential ?? null,
+      id,
+    ],
+  );
+  return getRound(db, id);
+}
+
 export function deleteRound(db: Db, id: number): void {
   db.runSync('DELETE FROM rounds WHERE id = ?', [id]);
 }
