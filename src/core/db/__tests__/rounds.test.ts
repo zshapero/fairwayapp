@@ -9,6 +9,7 @@ import {
   deleteRound,
   getRound,
   listRoundsForPlayer,
+  updateRound,
   updateRoundResults,
 } from '../repositories/rounds';
 import { createHoleScore, countHoleScores } from '../repositories/holeScores';
@@ -83,6 +84,32 @@ describe('rounds repository', () => {
     });
     expect(updated?.adjusted_gross_score).toBe(92);
     expect(updated?.score_differential).toBe(18.3);
+  });
+
+  it('persists notes via updateRound and preserves other fields', () => {
+    const { db, player, course, tee } = setup();
+    const r = createRound(db, {
+      player_id: player.id,
+      course_id: course.id,
+      tee_id: tee.id,
+      played_at: '2024-06-01T00:00:00Z',
+      num_holes_played: 18,
+      pcc: 0,
+      course_handicap: 12,
+      adjusted_gross_score: 92,
+      score_differential: 18.4,
+    });
+    const updated = updateRound(db, r.id, { notes: 'Birdied 7. Lost ball on 14.' });
+    expect(updated?.notes).toBe('Birdied 7. Lost ball on 14.');
+    expect(updated?.adjusted_gross_score).toBe(92);
+    expect(updated?.score_differential).toBe(18.4);
+    // Round-trip after a re-read.
+    expect(getRound(db, r.id)?.notes).toBe('Birdied 7. Lost ball on 14.');
+  });
+
+  it('updateRound returns null for missing rounds', () => {
+    const { db } = setup();
+    expect(updateRound(db, 9999, { notes: 'x' })).toBeNull();
   });
 
   it('deleting a round cascades to its hole_scores', () => {

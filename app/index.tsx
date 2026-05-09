@@ -4,7 +4,16 @@ import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GlassCard } from '@/components/GlassCard';
 import { HandicapTrendChart } from '@/components/HandicapTrendChart';
+import type { SnapshotPoint } from '@/components/HandicapTrendChart';
 import { generateDemoTrend } from '@/components/home/demoTrend';
+import { RoundsLately } from '@/components/home/RoundsLately';
+import type { RoundCardData } from '@/components/home/RoundCard';
+import { getDb } from '@/core/db/database';
+import { getCourse } from '@/core/db/repositories/courses';
+import { getSnapshotsForPlayer } from '@/core/db/repositories/handicapSnapshots';
+import { listPlayers } from '@/core/db/repositories/players';
+import { listRoundsForPlayer } from '@/core/db/repositories/rounds';
+import { listTeeHoles } from '@/core/db/repositories/teeHoles';
 import { ACCENT_GOLD, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
 const HOUR_GREETINGS: { from: number; text: string }[] = [
@@ -22,14 +31,64 @@ function greetingForHour(hour: number): string {
   return pick.text;
 }
 
+interface HomeData {
+  snapshots: SnapshotPoint[];
+  rounds: RoundCardData[];
+  latestIndex: number | null;
+  priorIndex: number | null;
+}
+
+function loadHome(): HomeData {
+  const db = getDb();
+  const player = listPlayers(db)[0];
+  if (player === undefined) {
+    const fallback = generateDemoTrend();
+    return {
+      snapshots: fallback,
+      rounds: [],
+      latestIndex: fallback[fallback.length - 1]?.index ?? null,
+      priorIndex: fallback[fallback.length - 2]?.index ?? null,
+    };
+  }
+  const snaps = getSnapshotsForPlayer(db, player.id);
+  const snapshots: SnapshotPoint[] = snaps.map((s) => ({
+    date: new Date(s.calculated_at),
+    index: s.handicap_index,
+  }));
+  const rounds: RoundCardData[] = listRoundsForPlayer(db, player.id)
+    .slice(0, 5)
+    .map((r) => {
+      const course = getCourse(db, r.course_id);
+      const teeHoles = listTeeHoles(db, r.tee_id);
+      const parTotal = teeHoles.reduce((s, th) => s + th.par, 0);
+      const courseLabel =
+        course !== null
+          ? course.course_name !== null
+            ? `${course.club_name}`
+            : course.club_name
+          : 'Unknown course';
+      return {
+        id: r.id,
+        courseName: courseLabel,
+        playedAt: new Date(r.played_at),
+        grossScore: r.adjusted_gross_score ?? 0,
+        parTotal: parTotal === 0 ? 72 : parTotal,
+      };
+    });
+  // Fall back to demo trend when seeding failed entirely.
+  const trend = snapshots.length >= 3 ? snapshots : generateDemoTrend();
+  return {
+    snapshots: trend,
+    rounds,
+    latestIndex: trend[trend.length - 1]?.index ?? null,
+    priorIndex: trend[trend.length - 2]?.index ?? null,
+  };
+}
+
 export default function Home(): JSX.Element {
-  const snapshots = useMemo(() => generateDemoTrend(), []);
-  const latest = snapshots[snapshots.length - 1];
-  const prior = snapshots[snapshots.length - 2];
-  const delta = latest && prior ? latest.index - prior.index : 0;
+  const data = useMemo(() => loadHome(), []);
   const greeting = greetingForHour(new Date().getHours());
 
-  // Replay the entry animation only on the first focus of this session.
   const hasFocusedRef = useRef(false);
   const [skipEntry, setSkipEntry] = useState(false);
   useFocusEffect(
@@ -43,10 +102,16 @@ export default function Home(): JSX.Element {
     }, []),
   );
 
+  const delta =
+    data.latestIndex !== null && data.priorIndex !== null
+      ? data.latestIndex - data.priorIndex
+      : 0;
   const deltaText =
-    delta === 0
-      ? 'No change from last round'
-      : `${delta < 0 ? '↓' : '↑'} ${Math.abs(delta).toFixed(1)} from last round`;
+    data.latestIndex === null || data.priorIndex === null
+      ? '—'
+      : delta === 0
+        ? 'No change from last round'
+        : `${delta < 0 ? '↓' : '↑'} ${Math.abs(delta).toFixed(1)} from last round`;
   const deltaColor = delta <= 0 ? MASTERS_GREEN : ACCENT_GOLD;
 
   return (
@@ -85,7 +150,7 @@ export default function Home(): JSX.Element {
                   letterSpacing: -2,
                 }}
               >
-                {latest.index.toFixed(1)}
+                {data.latestIndex !== null ? data.latestIndex.toFixed(1) : '—'}
               </Text>
               <Text
                 style={{
@@ -101,7 +166,7 @@ export default function Home(): JSX.Element {
           </View>
 
           <View className="mt-4 px-8">
-            <HandicapTrendChart snapshots={snapshots} skipEntry={skipEntry} />
+            <HandicapTrendChart snapshots={data.snapshots} skipEntry={skipEntry} />
           </View>
 
           <View className="mt-6 px-8 pb-8">
@@ -117,6 +182,8 @@ export default function Home(): JSX.Element {
             </Link>
           </View>
         </GlassCard>
+
+        <RoundsLately rounds={data.rounds} />
       </ScrollView>
     </SafeAreaView>
   );
