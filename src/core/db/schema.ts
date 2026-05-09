@@ -1,5 +1,5 @@
 /** Schema version tracked in the schema_version table. Bump when migrations are added. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** All DDL needed to bring an empty database up to {@link SCHEMA_VERSION}. */
 export const SCHEMA_SQL = `
@@ -99,4 +99,15 @@ CREATE INDEX IF NOT EXISTS idx_tee_holes_tee ON tee_holes(tee_id);
 CREATE INDEX IF NOT EXISTS idx_rounds_player ON rounds(player_id);
 CREATE INDEX IF NOT EXISTS idx_hole_scores_round ON hole_scores(round_id);
 CREATE INDEX IF NOT EXISTS idx_handicap_snapshots_player ON handicap_snapshots(player_id);
+
+CREATE TABLE IF NOT EXISTS drill_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_id INTEGER NOT NULL,
+  recommendation_key TEXT NOT NULL,
+  logged_at TEXT NOT NULL,
+  notes TEXT,
+  FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_drill_log_player ON drill_log(player_id);
 `;

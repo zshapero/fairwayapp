@@ -4,6 +4,10 @@
  */
 export type IntBool = 0 | 1;
 
+export type SubscriptionTier = 'free' | 'premium';
+export type PreferredUnits = 'imperial' | 'metric';
+export type TimeFormat = '12h' | '24h';
+
 export interface Player {
   id: number;
   name: string;
@@ -11,6 +15,12 @@ export interface Player {
   gender: string | null;
   created_at: string;
   updated_at: string;
+  subscription_tier: SubscriptionTier;
+  subscription_started_at: number | null;
+  subscription_expires_at: number | null;
+  preferred_units: PreferredUnits;
+  time_format: TimeFormat;
+  preferred_tee_id: number | null;
 }
 
 export interface Course {
@@ -92,6 +102,7 @@ export const DATA_TABLES = [
   'rounds',
   'hole_scores',
   'handicap_snapshots',
+  'drill_log',
 ] as const;
 
 export type DataTable = (typeof DATA_TABLES)[number];

@@ -1,6 +1,8 @@
-import { Link, useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { Link, router, useFocusEffect } from 'expo-router';
+import { GearSix } from 'phosphor-react-native';
 import { type JSX, useCallback, useMemo, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GlassCard } from '@/components/GlassCard';
 import { HandicapTrendChart } from '@/components/HandicapTrendChart';
@@ -116,6 +118,27 @@ export default function Home(): JSX.Element {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#F5F5F2' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          paddingHorizontal: 20,
+          paddingTop: 4,
+        }}
+      >
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {
+              /* haptics unavailable — ignore */
+            });
+            router.push('/settings');
+          }}
+          hitSlop={10}
+        >
+          <GearSix size={22} color={MUTED_TEXT} weight="duotone" />
+        </Pressable>
+      </View>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <GlassCard className="px-0 py-0">
           <View className="px-8 pt-8">
@@ -169,7 +192,20 @@ export default function Home(): JSX.Element {
             <HandicapTrendChart snapshots={data.snapshots} skipEntry={skipEntry} />
           </View>
 
-          <View className="mt-6 px-8 pb-8">
+          <View
+            className="mt-6 px-8 pb-8"
+            style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+          >
+            <Link
+              href="/recommendations"
+              style={{
+                fontFamily: 'Inter_500Medium',
+                fontSize: 13,
+                color: MASTERS_GREEN,
+              }}
+            >
+              Recommendations →
+            </Link>
             <Link
               href="/debug"
               style={{
@@ -178,7 +214,7 @@ export default function Home(): JSX.Element {
                 color: MUTED_TEXT,
               }}
             >
-              Debug →
+              Debug
             </Link>
           </View>
         </GlassCard>
