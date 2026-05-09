@@ -30,6 +30,12 @@ export function seedDevContent(db: Db): { playerId: number; roundId: number | nu
   if (player === undefined) {
     player = createPlayer(db, { name: 'You', gender: 'M' });
   }
+  // Seeded dev players skip onboarding — onboarding only fires after a real
+  // "Clear all data" reset (which removes the player row entirely).
+  if (player.onboarded === 0) {
+    db.runSync('UPDATE players SET onboarded = 1 WHERE id = ?', [player.id]);
+    player = listPlayers(db)[0]!;
+  }
 
   const existingRounds = listRoundsForPlayer(db, player.id);
   if (existingRounds.length > 0) {

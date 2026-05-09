@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRefresh } from '@/components/PullToRefresh';
 import { SegmentedControl } from '@/components/settings/SegmentedControl';
 import Svg, { Line, Polygon, Rect } from 'react-native-svg';
 import {
@@ -372,9 +373,13 @@ function CalendarView({ rounds }: { rounds: HistoryRound[] }): JSX.Element {
     if (selectedKey === null) return [];
     return rounds.filter((r) => dayKey(r.date) === selectedKey);
   }, [rounds, selectedKey]);
+  const { refreshControl } = useRefresh();
 
   return (
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}>
+    <ScrollView
+      refreshControl={refreshControl}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+    >
       <View
         style={{
           flexDirection: 'row',
@@ -549,6 +554,7 @@ interface ListSection {
 }
 
 function ListView({ rounds }: { rounds: HistoryRound[] }): JSX.Element {
+  const refresh = useRefresh();
   const sections = useMemo<ListSection[]>(() => {
     const groups = new Map<string, HistoryRound[]>();
     for (const r of rounds) {
@@ -569,6 +575,7 @@ function ListView({ rounds }: { rounds: HistoryRound[] }): JSX.Element {
     <SectionList
       sections={sections}
       keyExtractor={(item) => String(item.id)}
+      refreshControl={refresh.refreshControl}
       stickySectionHeadersEnabled
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
       renderSectionHeader={({ section }) => (

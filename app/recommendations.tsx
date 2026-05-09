@@ -12,6 +12,7 @@ import {
 import { EmptyState } from '@/components/recommendations/EmptyState';
 import { RecommendationCard } from '@/components/recommendations/RecommendationCard';
 import { GlassCard } from '@/components/GlassCard';
+import { useRefresh } from '@/components/PullToRefresh';
 import { getDb } from '@/core/db/database';
 import { hasLoggedRecently, logDrill } from '@/core/db/repositories/drillLog';
 import { listPlayers } from '@/core/db/repositories/players';
@@ -39,10 +40,14 @@ export default function Recommendations(): JSX.Element {
 }
 
 function TeaserScreen(): JSX.Element {
+  const { refreshControl } = useRefresh();
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: CREAM }}>
       <Header />
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }}>
+      <ScrollView
+        refreshControl={refreshControl}
+        contentContainerStyle={{ padding: 20, paddingBottom: 48 }}
+      >
         <View style={{ alignItems: 'center', marginTop: 16 }}>
           <View
             style={{
@@ -265,11 +270,15 @@ function PremiumRecommendations(): JSX.Element {
   const opportunities = DEMO_RECOMMENDATIONS.filter((r) => r.kind === 'opportunity');
   const otherCards = DEMO_RECOMMENDATIONS.filter((r) => r.kind !== 'opportunity');
   const hasAny = DEMO_RECOMMENDATIONS.length > 0;
+  const { refreshControl } = useRefresh();
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: CREAM }}>
       <Header />
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }}>
+      <ScrollView
+        refreshControl={refreshControl}
+        contentContainerStyle={{ padding: 20, paddingBottom: 48 }}
+      >
         <Text
           style={{
             fontFamily: 'Fraunces_700Bold',

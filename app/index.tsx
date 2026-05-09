@@ -5,6 +5,7 @@ import { type JSX, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GlassCard } from '@/components/GlassCard';
+import { useRefresh } from '@/components/PullToRefresh';
 import { HandicapTrendChart } from '@/components/HandicapTrendChart';
 import type { SnapshotPoint } from '@/components/HandicapTrendChart';
 import { generateDemoTrend } from '@/components/home/demoTrend';
@@ -38,6 +39,9 @@ interface HomeData {
   rounds: RoundCardData[];
   latestIndex: number | null;
   priorIndex: number | null;
+  homeCourseLabel: string | null;
+  homeCourseId: number | null;
+  hasPlayedHomeCourse: boolean;
 }
 
 function loadHome(): HomeData {
@@ -50,6 +54,9 @@ function loadHome(): HomeData {
       rounds: [],
       latestIndex: fallback[fallback.length - 1]?.index ?? null,
       priorIndex: fallback[fallback.length - 2]?.index ?? null,
+      homeCourseLabel: null,
+      homeCourseId: null,
+      hasPlayedHomeCourse: false,
     };
   }
   const snaps = getSnapshotsForPlayer(db, player.id);
@@ -79,17 +86,33 @@ function loadHome(): HomeData {
     });
   // Fall back to demo trend when seeding failed entirely.
   const trend = snapshots.length >= 3 ? snapshots : generateDemoTrend();
+  let homeCourseLabel: string | null = null;
+  let hasPlayedHomeCourse = false;
+  if (player.home_course_id !== null) {
+    const home = getCourse(db, player.home_course_id);
+    if (home !== null) {
+      homeCourseLabel = home.club_name;
+      hasPlayedHomeCourse = rounds.some((r) => {
+        const round = listRoundsForPlayer(db, player.id).find((x) => x.id === r.id);
+        return round?.course_id === player.home_course_id;
+      });
+    }
+  }
   return {
     snapshots: trend,
     rounds,
     latestIndex: trend[trend.length - 1]?.index ?? null,
     priorIndex: trend[trend.length - 2]?.index ?? null,
+    homeCourseLabel,
+    homeCourseId: player.home_course_id,
+    hasPlayedHomeCourse,
   };
 }
 
 export default function Home(): JSX.Element {
   const data = useMemo(() => loadHome(), []);
   const greeting = greetingForHour(new Date().getHours());
+  const { refreshControl } = useRefresh();
 
   const hasFocusedRef = useRef(false);
   const [skipEntry, setSkipEntry] = useState(false);
@@ -150,7 +173,10 @@ export default function Home(): JSX.Element {
           <GearSix size={22} color={MUTED_TEXT} weight="duotone" />
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+      <ScrollView
+        refreshControl={refreshControl}
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+      >
         <GlassCard className="px-0 py-0">
           <View className="px-8 pt-8">
             <Text
@@ -171,7 +197,11 @@ export default function Home(): JSX.Element {
                 marginTop: 4,
               }}
             >
-              Your handicap index, tracking quietly.
+              {data.homeCourseLabel === null
+                ? 'Your handicap index, tracking quietly.'
+                : data.hasPlayedHomeCourse
+                  ? `Last played at ${data.homeCourseLabel}.`
+                  : `Ready to play ${data.homeCourseLabel}?`}
             </Text>
 
             <View style={{ marginTop: 18, alignItems: 'flex-start' }}>

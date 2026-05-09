@@ -1,10 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Export } from 'phosphor-react-native';
 import { type JSX, useCallback, useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useToast } from '@/components/Toast';
+import { recomputeSnapshotsFromDate } from '@/services/snapshotRecompute';
 import { HandicapMovementCard } from '@/components/round-detail/HandicapMovementCard';
 import { HeroHeader } from '@/components/round-detail/HeroHeader';
 import { Scorecard } from '@/components/round-detail/Scorecard';
@@ -108,16 +110,24 @@ export default function RoundDetail(): JSX.Element {
     [data, queryClient],
   );
 
+  const toast = useToast();
+
   const handleDelete = useCallback(() => {
+    // RoundActions already raises the stern confirmation alert.
     if (data === null) return;
-    deleteRoundRow(getDb(), data.round.id);
-    queryClient.invalidateQueries({ queryKey: queryKeys.rounds(data.round.player_id) });
-    router.back();
-  }, [data, queryClient]);
+    const db = getDb();
+    const playedAt = data.round.played_at;
+    deleteRoundRow(db, data.round.id);
+    recomputeSnapshotsFromDate(db, data.round.player_id, playedAt);
+    queryClient.invalidateQueries();
+    toast.show('Round deleted');
+    router.replace('/');
+  }, [data, queryClient, toast]);
 
   const handleEdit = useCallback(() => {
-    router.push('/debug');
-  }, []);
+    if (data === null) return;
+    router.push(`/rounds/${data.round.id}/edit`);
+  }, [data]);
 
   if (data === null) {
     return (

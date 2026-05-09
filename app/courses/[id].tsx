@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { GlassCard } from '@/components/GlassCard';
+import { useRefresh } from '@/components/PullToRefresh';
 import { TroubleHoles } from '@/components/course-detail/TroubleHoles';
 import { TeesPlayed } from '@/components/course-detail/TeesPlayed';
 import { HandicapTrendChart } from '@/components/HandicapTrendChart';
@@ -131,6 +132,7 @@ export default function CourseDetail(): JSX.Element {
     if (Number.isNaN(id)) return null;
     return loadCourse(id);
   }, [id]);
+  const { refreshControl } = useRefresh();
 
   if (data === null) {
     return (
@@ -184,7 +186,10 @@ export default function CourseDetail(): JSX.Element {
         ← Courses
       </Link>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView
+        refreshControl={refreshControl}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
         {/* Hero */}
         <Animated.View
           entering={FadeIn.duration(300)}
