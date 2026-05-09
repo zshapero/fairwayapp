@@ -131,6 +131,16 @@ export const DATA_TABLES = [
   'handicap_snapshots',
   'drill_log',
   'recent_searches',
+  'round_photos',
 ] as const;
+
+export interface RoundPhoto {
+  id: string;
+  round_id: number;
+  file_uri: string;
+  caption: string | null;
+  taken_at: number;
+  created_at: number;
+}
 
 export type DataTable = (typeof DATA_TABLES)[number];

@@ -1,5 +1,5 @@
 /** Schema version tracked in the schema_version table. Bump when migrations are added. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /** All DDL needed to bring an empty database up to {@link SCHEMA_VERSION}. */
 export const SCHEMA_SQL = `
@@ -118,4 +118,16 @@ CREATE TABLE IF NOT EXISTS recent_searches (
 );
 
 CREATE INDEX IF NOT EXISTS idx_recent_searches_at ON recent_searches(searched_at DESC);
+
+CREATE TABLE IF NOT EXISTS round_photos (
+  id TEXT PRIMARY KEY,
+  round_id INTEGER NOT NULL,
+  file_uri TEXT NOT NULL,
+  caption TEXT,
+  taken_at INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (round_id) REFERENCES rounds(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_round_photos_round ON round_photos(round_id);
 `;

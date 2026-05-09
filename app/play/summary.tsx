@@ -9,6 +9,7 @@ import { listPlayers } from '@/core/db/repositories/players';
 import { listRoundsForPlayer } from '@/core/db/repositories/rounds';
 import { getTee } from '@/core/db/repositories/tees';
 import { listTeeHoles } from '@/core/db/repositories/teeHoles';
+import { PhotosSection } from '@/components/round-detail/PhotosSection';
 import { calculateExpectedScore } from '@/core/handicap';
 import { trackEvent } from '@/services/analytics';
 import { fetchAndStoreWeatherForRound } from '@/services/weather';
@@ -159,6 +160,12 @@ export default function PlaySummary(): JSX.Element {
             Round entry flow lands in a future PR — this is the share trigger surface.
           </Text>
         )}
+
+        {round !== null ? (
+          <View style={{ marginTop: 28 }}>
+            <PhotosSection roundId={round.id} />
+          </View>
+        ) : null}
 
         <View style={{ marginTop: 32, gap: 12 }}>
           <Pressable

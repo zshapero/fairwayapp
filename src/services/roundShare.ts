@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import type { RefObject } from 'react';
@@ -7,6 +7,7 @@ import { captureRef } from 'react-native-view-shot';
 import { getDb } from '@/core/db/database';
 import { getCourse } from '@/core/db/repositories/courses';
 import { listHoleScoresForRound } from '@/core/db/repositories/holeScores';
+import { listPhotosForRound } from '@/core/db/repositories/roundPhotos';
 import { getRound, listRoundsForPlayer } from '@/core/db/repositories/rounds';
 import { getTee } from '@/core/db/repositories/tees';
 import { listTeeHoles } from '@/core/db/repositories/teeHoles';
@@ -95,6 +96,9 @@ export function buildShareData(roundId: number): ShareableRoundCardProps | null 
       ? `${tee.tee_name} Tees · ${tee.total_yards ?? '—'}y`
       : 'Tees';
   const dateLabel = formatLongDate(new Date(round.played_at));
+  const photos = listPhotosForRound(db, round.id);
+  const defaultPhotoUri =
+    photos.length > 0 ? photos[photos.length - 1].file_uri : null;
 
   return {
     courseName,
@@ -109,7 +113,17 @@ export function buildShareData(roundId: number): ShareableRoundCardProps | null 
     putts: hasPutts ? putts : null,
     highlight,
     nineHole: round.num_holes_played === 9,
+    backgroundPhotoUri: defaultPhotoUri,
   };
+}
+
+/**
+ * Public read of a round's photos as URI strings — used by the share
+ * preview screen when it needs to show the "use which photo as background?"
+ * thumbnail row.
+ */
+export function listShareablePhotoUris(roundId: number): string[] {
+  return listPhotosForRound(getDb(), roundId).map((p) => p.file_uri);
 }
 
 const MONTHS_LONG = [
