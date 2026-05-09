@@ -25,6 +25,23 @@ export interface Player {
   home_course_id: number | null;
 }
 
+export type WeatherCondition =
+  | 'clear'
+  | 'partly_cloudy'
+  | 'cloudy'
+  | 'rain'
+  | 'snow';
+
+export type WindDirection =
+  | 'N'
+  | 'NE'
+  | 'E'
+  | 'SE'
+  | 'S'
+  | 'SW'
+  | 'W'
+  | 'NW';
+
 export interface Course {
   id: number;
   external_id: string | null;
@@ -36,6 +53,8 @@ export interface Course {
   num_holes: number;
   is_favorite: IntBool;
   created_at: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface Tee {
@@ -71,6 +90,12 @@ export interface Round {
   score_differential: number | null;
   notes: string | null;
   created_at: string;
+  temperature_f: number | null;
+  wind_speed_mph: number | null;
+  wind_direction: WindDirection | null;
+  precipitation_mm: number | null;
+  weather_condition: WeatherCondition | null;
+  weather_fetched_at: number | null;
 }
 
 export interface HoleScore {

@@ -7,8 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfidencePill } from '@/components/recommendations/ConfidencePill';
 import {
   DEMO_RECOMMENDATIONS,
+  buildWeatherAwareRecommendation,
   type Recommendation,
 } from '@/components/recommendations/types';
+import { listRoundsForPlayer } from '@/core/db/repositories/rounds';
+import { detectWeatherAwarePerformance } from '@/core/scoring/weatherRecommendation';
 import { EmptyState } from '@/components/recommendations/EmptyState';
 import { RecommendationCard } from '@/components/recommendations/RecommendationCard';
 import { GlassCard } from '@/components/GlassCard';
@@ -248,17 +251,34 @@ function TeaserScreen(): JSX.Element {
 function PremiumRecommendations(): JSX.Element {
   const queryClient = useQueryClient();
   const player = useMemo(() => listPlayers(getDb())[0] ?? null, []);
+  // Walk the player's recent rounds and add the weather-aware rec if the
+  // gap between mild and windy averages crosses the threshold.
+  const dynamicRecs = useMemo<Recommendation[]>(() => {
+    if (player === null) return [];
+    const rounds = listRoundsForPlayer(getDb(), player.id).map((r) => ({
+      grossScore: r.adjusted_gross_score ?? 0,
+      windSpeedMph: r.wind_speed_mph,
+    }));
+    const verdict = detectWeatherAwarePerformance(rounds);
+    return verdict.triggered && verdict.delta !== null
+      ? [buildWeatherAwareRecommendation(verdict.delta)]
+      : [];
+  }, [player]);
+  const allRecs = useMemo(
+    () => [...dynamicRecs, ...DEMO_RECOMMENDATIONS],
+    [dynamicRecs],
+  );
   const initialLogged = useMemo(() => {
     if (player === null) return new Set<string>();
     const set = new Set<string>();
-    for (const r of DEMO_RECOMMENDATIONS) {
+    for (const r of allRecs) {
       if (r.kind !== 'opportunity') continue;
       if (hasLoggedRecently(getDb(), player.id, r.key)) {
         set.add(r.key);
       }
     }
     return set;
-  }, [player]);
+  }, [allRecs, player]);
   const [, force] = useState(0);
 
   const onPracticed = useCallback(
@@ -277,9 +297,9 @@ function PremiumRecommendations(): JSX.Element {
     [player, queryClient, initialLogged],
   );
 
-  const opportunities = DEMO_RECOMMENDATIONS.filter((r) => r.kind === 'opportunity');
-  const otherCards = DEMO_RECOMMENDATIONS.filter((r) => r.kind !== 'opportunity');
-  const hasAny = DEMO_RECOMMENDATIONS.length > 0;
+  const opportunities = allRecs.filter((r) => r.kind === 'opportunity');
+  const otherCards = allRecs.filter((r) => r.kind !== 'opportunity');
+  const hasAny = allRecs.length > 0;
   const { refreshControl } = useRefresh();
 
   return (

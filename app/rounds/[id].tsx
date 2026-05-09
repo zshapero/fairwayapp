@@ -204,6 +204,12 @@ export default function RoundDetail(): JSX.Element {
           courseName={courseName}
           playedAt={new Date(round.played_at)}
           teePillText={teePillText}
+          weather={{
+            temperatureF: round.temperature_f,
+            windSpeedMph: round.wind_speed_mph,
+            windDirection: round.wind_direction,
+            condition: round.weather_condition,
+          }}
         />
 
         {!hasPerHoleData ? <PartialDataBanner /> : null}

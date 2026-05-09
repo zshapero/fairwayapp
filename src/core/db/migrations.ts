@@ -76,6 +76,16 @@ export function runMigrations(db: Db): void {
     'home_course_id INTEGER',
   );
 
+  // v4: weather columns on rounds + lat/lng on courses.
+  ensureColumn(db, 'courses', 'latitude', 'latitude REAL');
+  ensureColumn(db, 'courses', 'longitude', 'longitude REAL');
+  ensureColumn(db, 'rounds', 'temperature_f', 'temperature_f REAL');
+  ensureColumn(db, 'rounds', 'wind_speed_mph', 'wind_speed_mph REAL');
+  ensureColumn(db, 'rounds', 'wind_direction', 'wind_direction TEXT');
+  ensureColumn(db, 'rounds', 'precipitation_mm', 'precipitation_mm REAL');
+  ensureColumn(db, 'rounds', 'weather_condition', 'weather_condition TEXT');
+  ensureColumn(db, 'rounds', 'weather_fetched_at', 'weather_fetched_at INTEGER');
+
   const current = db.getFirstSync<{ version: number }>(
     'SELECT version FROM schema_version LIMIT 1',
     [],

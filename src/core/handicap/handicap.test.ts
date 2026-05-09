@@ -7,6 +7,7 @@ import {
   handicapIndex,
   courseHandicap,
   exceptionalScoreReduction,
+  calculateExpectedScore,
 } from './index';
 import type { HoleScore, RoundInput } from './types';
 
@@ -212,5 +213,79 @@ describe('exceptionalScoreReduction', () => {
   it('returns 2 when differential is 10.0 or more below current index', () => {
     expect(exceptionalScoreReduction(2.0, 12.0)).toBe(2); // delta 10.0
     expect(exceptionalScoreReduction(0.0, 15.0)).toBe(2); // delta 15.0
+  });
+});
+
+describe('calculateExpectedScore', () => {
+  // HI 14.0, slope 130, CR 71.5, par 72 → CH = round(14 * 130/113 + (71.5 - 72)) = 16.
+  // Expected base = 72 + 16 = 88.
+  it('returns base expected score with no weather', () => {
+    expect(calculateExpectedScore(14.0, 71.5, 130, 72)).toBe(88);
+    expect(calculateExpectedScore(14.0, 71.5, 130, 72, null)).toBe(88);
+  });
+
+  it('adds nothing under 10 mph wind', () => {
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { windSpeedMph: 8 }),
+    ).toBe(88);
+  });
+
+  it('adds 1 stroke per 10 mph over 10 mph (capped at +3)', () => {
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { windSpeedMph: 20 }),
+    ).toBe(89);
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { windSpeedMph: 30 }),
+    ).toBe(90);
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { windSpeedMph: 60 }),
+    ).toBe(91); // capped at +3
+  });
+
+  it('adds 0.5 to 1 stroke when below 50°F', () => {
+    // 49°F → +0.5 + (50-49)/40 = 0.525 → 88.5 → rounds to 89
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { temperatureF: 49 }),
+    ).toBe(89);
+    // 10°F → cap at +1 → 89
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { temperatureF: 10 }),
+    ).toBe(89);
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { temperatureF: 60 }),
+    ).toBe(88);
+  });
+
+  it('adds 1 stroke for rain or snow', () => {
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { condition: 'rain' }),
+    ).toBe(89);
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { condition: 'snow' }),
+    ).toBe(89);
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, { condition: 'clear' }),
+    ).toBe(88);
+  });
+
+  it('combines penalties: 25 mph + 45°F + rain', () => {
+    // wind +1.5, cold +0.5+5/40=0.625, rain +1 → 88 + 3.125 → 91
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, {
+        windSpeedMph: 25,
+        temperatureF: 45,
+        condition: 'rain',
+      }),
+    ).toBe(91);
+  });
+
+  it('handles null fields gracefully', () => {
+    expect(
+      calculateExpectedScore(14.0, 71.5, 130, 72, {
+        windSpeedMph: null,
+        temperatureF: null,
+        condition: null,
+      }),
+    ).toBe(88);
   });
 });
