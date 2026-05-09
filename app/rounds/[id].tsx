@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Export } from 'phosphor-react-native';
 import { type JSX, useCallback, useEffect, useMemo } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HandicapMovementCard } from '@/components/round-detail/HandicapMovementCard';
 import { HeroHeader } from '@/components/round-detail/HeroHeader';
@@ -145,18 +146,36 @@ export default function RoundDetail(): JSX.Element {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: CREAM }}>
-      <Link
-        href="/"
+      <View
         style={{
-          fontFamily: 'Inter_500Medium',
-          fontSize: 13,
-          color: MUTED_TEXT,
-          marginLeft: 20,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginHorizontal: 20,
           marginTop: 8,
         }}
       >
-        ← Back
-      </Link>
+        <Link
+          href="/"
+          style={{
+            fontFamily: 'Inter_500Medium',
+            fontSize: 13,
+            color: MUTED_TEXT,
+          }}
+        >
+          ← Back
+        </Link>
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={10}
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => undefined);
+            router.push(`/share/${data.round.id}`);
+          }}
+        >
+          <Export size={20} color={MUTED_TEXT} weight="duotone" />
+        </Pressable>
+      </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
         <HeroHeader
