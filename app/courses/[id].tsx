@@ -387,7 +387,7 @@ export default function CourseDetail(): JSX.Element {
         >
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push(`/play/summary?courseId=${course.id}`)}
+            onPress={() => router.push(`/play/select-tee?courseId=${course.id}`)}
             style={({ pressed }) => ({
               paddingVertical: 16,
               borderRadius: 14,
