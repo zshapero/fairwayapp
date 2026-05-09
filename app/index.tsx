@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Link, router, useFocusEffect } from 'expo-router';
-import { GearSix } from 'phosphor-react-native';
+import { CalendarBlank, GearSix } from 'phosphor-react-native';
 import { type JSX, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -121,11 +121,22 @@ export default function Home(): JSX.Element {
       <View
         style={{
           flexDirection: 'row',
-          justifyContent: 'flex-end',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           paddingHorizontal: 20,
           paddingTop: 4,
         }}
       >
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => undefined);
+            router.push('/history');
+          }}
+          hitSlop={10}
+        >
+          <CalendarBlank size={22} color={MUTED_TEXT} weight="duotone" />
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -220,6 +231,38 @@ export default function Home(): JSX.Element {
         </GlassCard>
 
         <RoundsLately rounds={data.rounds} />
+
+        {data.rounds.length > 0 ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginTop: 12,
+              paddingHorizontal: 24,
+            }}
+          >
+            <Link
+              href="/history"
+              style={{
+                fontFamily: 'Inter_500Medium',
+                fontSize: 13,
+                color: MUTED_TEXT,
+              }}
+            >
+              View all rounds →
+            </Link>
+            <Link
+              href="/courses"
+              style={{
+                fontFamily: 'Inter_500Medium',
+                fontSize: 13,
+                color: MUTED_TEXT,
+              }}
+            >
+              Browse my courses →
+            </Link>
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

@@ -115,3 +115,64 @@ export function countRounds(db: Db): number {
   const r = db.getFirstSync<{ c: number }>('SELECT COUNT(*) AS c FROM rounds', []);
   return r?.c ?? 0;
 }
+
+/** Rounds for a player whose played_at falls in the half-open [from, to) range. */
+export function getRoundsForPlayerInDateRange(
+  db: Db,
+  playerId: number,
+  fromTimestamp: number,
+  toTimestamp: number,
+): Round[] {
+  return db.getAllSync<Round>(
+    `${SELECT} WHERE player_id = ? AND played_at >= ? AND played_at < ?
+       ORDER BY played_at ASC`,
+    [playerId, new Date(fromTimestamp).toISOString(), new Date(toTimestamp).toISOString()],
+  );
+}
+
+/** Rounds for a player at a specific course, most recent first. */
+export function listRoundsAtCourseForPlayer(
+  db: Db,
+  playerId: number,
+  courseId: number,
+): Round[] {
+  return db.getAllSync<Round>(
+    `${SELECT} WHERE player_id = ? AND course_id = ? ORDER BY played_at DESC`,
+    [playerId, courseId],
+  );
+}
+
+export interface MonthGroup {
+  /** "YYYY-MM" key. */
+  yearMonth: string;
+  rounds: Round[];
+}
+
+/**
+ * Rounds for a player grouped by year-month, ordered most-recent month first.
+ * Limits the lookback to {@link monthsBack} months from today.
+ */
+export function getRoundsForPlayerGroupedByMonth(
+  db: Db,
+  playerId: number,
+  monthsBack = 12,
+): MonthGroup[] {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - monthsBack);
+  const rows = db.getAllSync<Round>(
+    `${SELECT} WHERE player_id = ? AND played_at >= ? ORDER BY played_at DESC`,
+    [playerId, cutoff.toISOString()],
+  );
+  const groups = new Map<string, Round[]>();
+  for (const r of rows) {
+    const d = new Date(r.played_at);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const list = groups.get(ym) ?? [];
+    list.push(r);
+    groups.set(ym, list);
+  }
+  return Array.from(groups.entries()).map(([yearMonth, rs]) => ({
+    yearMonth,
+    rounds: rs,
+  }));
+}
