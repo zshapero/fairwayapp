@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDb } from '@/core/db/database';
 import { listPlayers } from '@/core/db/repositories/players';
 import { listRoundsForPlayer } from '@/core/db/repositories/rounds';
+import { trackEvent } from '@/services/analytics';
 import { CREAM, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
 /**
@@ -56,7 +57,16 @@ export default function PlaySummary(): JSX.Element {
         <View style={{ marginTop: 32, gap: 12 }}>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/')}
+            onPress={() => {
+              if (round !== null) {
+                trackEvent('round_saved', {
+                  numHolesPlayed: round.num_holes_played,
+                  grossScore: round.adjusted_gross_score ?? 0,
+                  scoreDifferential: round.score_differential,
+                });
+              }
+              router.push('/');
+            }}
             style={({ pressed }) => ({
               paddingVertical: 16,
               borderRadius: 14,

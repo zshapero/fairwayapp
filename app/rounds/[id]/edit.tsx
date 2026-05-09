@@ -31,6 +31,8 @@ import {
 } from '@/core/db/repositories/rounds';
 import { getTee, listTeesForCourse } from '@/core/db/repositories/tees';
 import { listTeeHoles } from '@/core/db/repositories/teeHoles';
+import { trackEvent } from '@/services/analytics';
+import { logError } from '@/services/errorReporting';
 import { recomputeSnapshotsFromDate } from '@/services/snapshotRecompute';
 import {
   ACCENT_GOLD,
@@ -139,6 +141,7 @@ export default function EditRound(): JSX.Element {
     initial.availableTees.find((t) => t.id === teeId) ?? null;
 
   const onSave = (): void => {
+    try {
     const db = getDb();
     const targetTee = selectedTee ?? initial.availableTees.find((t) => t.id === initial.teeId);
     if (targetTee === undefined) {
@@ -196,8 +199,20 @@ export default function EditRound(): JSX.Element {
     recomputeSnapshotsFromDate(db, initial.playerId, earliest);
 
     queryClient.invalidateQueries();
+    trackEvent('round_edited', {
+      numHolesPlayed: holes.length,
+      grossScore: ags,
+    });
     toast.show('Saved');
     router.back();
+    } catch (e) {
+      logError(e, { scope: 'rounds.edit' });
+      trackEvent('error_caught', {
+        errorType: e instanceof Error ? e.name : 'unknown',
+        screenName: 'round_edit',
+      });
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again.');
+    }
   };
 
   return (

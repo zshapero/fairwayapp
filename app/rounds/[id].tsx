@@ -6,6 +6,8 @@ import { Export } from 'phosphor-react-native';
 import { type JSX, useCallback, useEffect, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useToast } from '@/components/Toast';
+import { trackEvent } from '@/services/analytics';
+import { logError } from '@/services/errorReporting';
 import { recomputeSnapshotsFromDate } from '@/services/snapshotRecompute';
 import { HandicapMovementCard } from '@/components/round-detail/HandicapMovementCard';
 import { HeroHeader } from '@/components/round-detail/HeroHeader';
@@ -115,13 +117,23 @@ export default function RoundDetail(): JSX.Element {
   const handleDelete = useCallback(() => {
     // RoundActions already raises the stern confirmation alert.
     if (data === null) return;
-    const db = getDb();
-    const playedAt = data.round.played_at;
-    deleteRoundRow(db, data.round.id);
-    recomputeSnapshotsFromDate(db, data.round.player_id, playedAt);
-    queryClient.invalidateQueries();
-    toast.show('Round deleted');
-    router.replace('/');
+    try {
+      const db = getDb();
+      const playedAt = data.round.played_at;
+      deleteRoundRow(db, data.round.id);
+      recomputeSnapshotsFromDate(db, data.round.player_id, playedAt);
+      queryClient.invalidateQueries();
+      trackEvent('round_deleted', {});
+      toast.show('Round deleted');
+      router.replace('/');
+    } catch (e) {
+      logError(e, { scope: 'rounds.delete' });
+      trackEvent('error_caught', {
+        errorType: e instanceof Error ? e.name : 'unknown',
+        screenName: 'round_detail',
+      });
+      toast.show('Could not delete the round');
+    }
   }, [data, queryClient, toast]);
 
   const handleEdit = useCallback(() => {

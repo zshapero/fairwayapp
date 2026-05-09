@@ -13,6 +13,7 @@ import {
   setHomeCourse as setHomeCourseRow,
 } from '@/core/db/repositories/players';
 import { recordSearch } from '@/core/db/repositories/recentSearches';
+import { trackEvent } from '@/services/analytics';
 import {
   ACCENT_GOLD,
   CREAM,
@@ -166,7 +167,10 @@ export default function HomeCourse(): JSX.Element {
       <View style={{ paddingHorizontal: 32, paddingBottom: 32 }}>
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/onboarding/finish')}
+          onPress={() => {
+            trackEvent('onboarding_skipped_home_course', {});
+            router.push('/onboarding/finish');
+          }}
           style={({ pressed }) => ({
             paddingVertical: 14,
             alignItems: 'center',

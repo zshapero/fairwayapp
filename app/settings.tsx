@@ -13,6 +13,7 @@ import {
   updatePlayerPreferences,
 } from '@/core/db/repositories/players';
 import type { PreferredUnits, TimeFormat } from '@/core/db/types';
+import { trackEvent } from '@/services/analytics';
 import { useSubscription } from '@/services/subscription';
 import { CREAM, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
@@ -158,7 +159,10 @@ export default function Settings(): JSX.Element {
               <SettingsRow title="Free plan" detail="Upgrade to unlock everything" />
               <SettingsRow
                 title="Get Premium"
-                onPress={() => router.push('/paywall')}
+                onPress={() => {
+                  trackEvent('paywall_shown', { source: 'settings' });
+                  router.push('/paywall');
+                }}
                 isLast
               />
             </>
