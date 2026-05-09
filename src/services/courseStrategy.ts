@@ -8,6 +8,7 @@ import {
   type HolePlay,
   type HolePlaysInput,
 } from '@/core/scoring/holeStrategy';
+import { timed } from './perfLogging';
 
 export type { HoleStrategy } from '@/core/scoring/holeStrategy';
 
@@ -17,6 +18,15 @@ export type { HoleStrategy } from '@/core/scoring/holeStrategy';
  * per hole that has at least 3 plays.
  */
 export function generateHoleStrategies(
+  courseId: number,
+  playerId: number,
+): HoleStrategy[] {
+  return timed('courseStrategy.generate', () =>
+    generateImpl(courseId, playerId),
+  );
+}
+
+function generateImpl(
   courseId: number,
   playerId: number,
 ): HoleStrategy[] {

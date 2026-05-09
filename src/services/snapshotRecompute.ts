@@ -5,6 +5,7 @@ import {
   createHandicapSnapshot,
   listSnapshotsForPlayer,
 } from '@/core/db/repositories/handicapSnapshots';
+import { timed } from './perfLogging';
 
 /**
  * Walks the player's chronological round history and rebuilds the
@@ -21,6 +22,14 @@ import {
  * Returns the number of snapshots written.
  */
 export function recomputeSnapshotsFromDate(
+  db: Db,
+  playerId: number,
+  fromIso: string,
+): { written: number } {
+  return timed('snapshotRecompute', () => recomputeImpl(db, playerId, fromIso));
+}
+
+function recomputeImpl(
   db: Db,
   playerId: number,
   fromIso: string,
