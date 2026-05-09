@@ -252,17 +252,24 @@ function PremiumRecommendations(): JSX.Element {
   const queryClient = useQueryClient();
   const player = useMemo(() => listPlayers(getDb())[0] ?? null, []);
   // Walk the player's recent rounds and add the weather-aware rec if the
-  // gap between mild and windy averages crosses the threshold.
+  // gap between mild and windy averages crosses the threshold. Wrapped in
+  // try/catch so a single rule throwing degrades gracefully — the rest of
+  // the recommendations list still renders.
   const dynamicRecs = useMemo<Recommendation[]>(() => {
     if (player === null) return [];
-    const rounds = listRoundsForPlayer(getDb(), player.id).map((r) => ({
-      grossScore: r.adjusted_gross_score ?? 0,
-      windSpeedMph: r.wind_speed_mph,
-    }));
-    const verdict = detectWeatherAwarePerformance(rounds);
-    return verdict.triggered && verdict.delta !== null
-      ? [buildWeatherAwareRecommendation(verdict.delta)]
-      : [];
+    try {
+      const rounds = listRoundsForPlayer(getDb(), player.id).map((r) => ({
+        grossScore: r.adjusted_gross_score ?? 0,
+        windSpeedMph: r.wind_speed_mph,
+      }));
+      const verdict = detectWeatherAwarePerformance(rounds);
+      return verdict.triggered && verdict.delta !== null
+        ? [buildWeatherAwareRecommendation(verdict.delta)]
+        : [];
+    } catch (e) {
+      logError(e, { scope: 'recommendations.weatherRule' });
+      return [];
+    }
   }, [player]);
   const allRecs = useMemo(
     () => [...dynamicRecs, ...DEMO_RECOMMENDATIONS],
