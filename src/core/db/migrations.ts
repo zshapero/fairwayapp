@@ -1,13 +1,69 @@
 import type { Db } from './db';
 import { SCHEMA_SQL, SCHEMA_VERSION } from './schema';
 
+/** Add a column to a table if it doesn't already exist (SQLite-safe). */
+function ensureColumn(
+  db: Db,
+  table: string,
+  column: string,
+  ddl: string,
+): void {
+  const cols = db.getAllSync<{ name: string }>(
+    `PRAGMA table_info(${table})`,
+    [],
+  );
+  if (cols.some((c) => c.name === column)) return;
+  db.execSync(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+}
+
 /**
  * Bring a database up to the current {@link SCHEMA_VERSION}. Idempotent:
- * may be called on every app start.
+ * may be called on every app start. Also enforces additive column
+ * migrations that can't be expressed in CREATE TABLE IF NOT EXISTS.
  */
 export function runMigrations(db: Db): void {
   db.execSync('PRAGMA foreign_keys = ON;');
   db.execSync(SCHEMA_SQL);
+
+  // Additive column migrations introduced in v2: subscription + preferences
+  // fields on players. Safe to run on every start.
+  ensureColumn(
+    db,
+    'players',
+    'subscription_tier',
+    "subscription_tier TEXT NOT NULL DEFAULT 'free'",
+  );
+  ensureColumn(
+    db,
+    'players',
+    'subscription_started_at',
+    'subscription_started_at INTEGER',
+  );
+  ensureColumn(
+    db,
+    'players',
+    'subscription_expires_at',
+    'subscription_expires_at INTEGER',
+  );
+  ensureColumn(
+    db,
+    'players',
+    'preferred_units',
+    "preferred_units TEXT NOT NULL DEFAULT 'imperial'",
+  );
+  ensureColumn(
+    db,
+    'players',
+    'time_format',
+    "time_format TEXT NOT NULL DEFAULT '12h'",
+  );
+  ensureColumn(
+    db,
+    'players',
+    'preferred_tee_id',
+    'preferred_tee_id INTEGER',
+  );
+
   const current = db.getFirstSync<{ version: number }>(
     'SELECT version FROM schema_version LIMIT 1',
     [],
@@ -17,7 +73,6 @@ export function runMigrations(db: Db): void {
     return;
   }
   if (current.version !== SCHEMA_VERSION) {
-    // Future migrations from current.version → SCHEMA_VERSION go here.
     db.runSync('UPDATE schema_version SET version = ?', [SCHEMA_VERSION]);
   }
 }
