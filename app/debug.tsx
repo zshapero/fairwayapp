@@ -20,6 +20,7 @@ import { countRounds } from '@/core/db/repositories/rounds';
 import { countHoleScores } from '@/core/db/repositories/holeScores';
 import { countHandicapSnapshots } from '@/core/db/repositories/handicapSnapshots';
 import { _devTriggerSentryError } from '@/services/errorReporting';
+import { backfillRoundWeather } from '@/services/weather';
 
 interface Counts {
   players: number;
@@ -216,6 +217,27 @@ export default function Debug(): JSX.Element {
         <DebugButton
           label="Run handicap test"
           onPress={onRunHandicap}
+          disabled={busy}
+          tone="neutral"
+        />
+        <DebugButton
+          label="Backfill weather"
+          onPress={() => {
+            setBusy(true);
+            void backfillRoundWeather()
+              .then((r) => {
+                setMessage(
+                  `Weather: ${r.fetched} fetched, ${r.skipped} skipped, ${r.failed} failed.`,
+                );
+                refresh();
+              })
+              .catch((e) => {
+                setMessage(
+                  `Backfill failed: ${e instanceof Error ? e.message : String(e)}`,
+                );
+              })
+              .finally(() => setBusy(false));
+          }}
           disabled={busy}
           tone="neutral"
         />

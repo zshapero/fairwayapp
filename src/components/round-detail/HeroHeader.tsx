@@ -3,11 +3,19 @@ import type { JSX } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { ACCENT_GOLD_MUTED, CREAM, MUTED_TEXT } from '@/theme/colors';
+import type { WeatherCondition, WindDirection } from '@/core/db/types';
+import { WeatherChip } from './WeatherChip';
 
 interface HeroHeaderProps {
   courseName: string;
   playedAt: Date;
   teePillText: string;
+  weather?: {
+    temperatureF: number | null;
+    windSpeedMph: number | null;
+    windDirection: WindDirection | null;
+    condition: WeatherCondition | null;
+  };
 }
 
 const DAYS = [
@@ -48,6 +56,7 @@ export function HeroHeader({
   courseName,
   playedAt,
   teePillText,
+  weather,
 }: HeroHeaderProps): JSX.Element {
   return (
     <Animated.View entering={FadeIn.duration(400)} style={{ paddingVertical: 64 }}>
@@ -115,6 +124,14 @@ export function HeroHeader({
             {teePillText}
           </Text>
         </View>
+        {weather !== undefined ? (
+          <WeatherChip
+            temperatureF={weather.temperatureF}
+            windSpeedMph={weather.windSpeedMph}
+            windDirection={weather.windDirection}
+            condition={weather.condition}
+          />
+        ) : null}
       </View>
     </Animated.View>
   );

@@ -158,3 +158,62 @@ export function exceptionalScoreReduction(
   if (delta >= 7.0) return 1;
   return 0;
 }
+
+/** Weather inputs used by {@link calculateExpectedScore}. All fields nullable. */
+export interface ExpectedScoreWeather {
+  temperatureF?: number | null;
+  windSpeedMph?: number | null;
+  /** "rain" / "snow" trigger an extra-stroke penalty. */
+  condition?: 'clear' | 'partly_cloudy' | 'cloudy' | 'rain' | 'snow' | null;
+}
+
+/**
+ * Estimate the gross score this player should be expected to shoot on
+ * this course in these conditions.
+ *
+ *   base    = par + courseHandicap(handicapIndex, slope, rating, par)
+ *   wind    = +1 stroke per 10 mph over 10 mph, capped at +3
+ *   cold    = +0.5 strokes when below 50°F, capped at +1
+ *   weather = +1 stroke for rain or snow
+ *
+ * Conservative on purpose — these are amateur-grade adjustments, not a
+ * meteorological model. Returns the rounded integer expected score.
+ *
+ * Source: heuristic, calibrated against published bogey-golfer averages.
+ * Not from a USGA document.
+ */
+export function calculateExpectedScore(
+  handicapIndexValue: number,
+  courseRatingValue: number,
+  slopeRatingValue: number,
+  par: number,
+  weather: ExpectedScoreWeather | null = null,
+): number {
+  const ch = courseHandicap(
+    handicapIndexValue,
+    slopeRatingValue,
+    courseRatingValue,
+    par,
+  );
+  let expected = par + ch;
+
+  if (weather !== null && weather !== undefined) {
+    const wind = weather.windSpeedMph;
+    if (wind !== null && wind !== undefined && wind > 10) {
+      const overByTens = (wind - 10) / 10;
+      expected += Math.min(3, overByTens);
+    }
+    const temp = weather.temperatureF;
+    if (temp !== null && temp !== undefined && temp < 50) {
+      // 0.5 strokes for any sub-50°F day, scaling 0.5 → 1 as it gets colder.
+      const coldPenalty = Math.min(1, 0.5 + (50 - temp) / 40);
+      expected += coldPenalty;
+    }
+    const cond = weather.condition;
+    if (cond === 'rain' || cond === 'snow') {
+      expected += 1;
+    }
+  }
+
+  return Math.round(expected);
+}

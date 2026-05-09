@@ -1,5 +1,5 @@
 /** Schema version tracked in the schema_version table. Bump when migrations are added. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** All DDL needed to bring an empty database up to {@link SCHEMA_VERSION}. */
 export const SCHEMA_SQL = `

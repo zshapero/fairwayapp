@@ -4,24 +4,103 @@ import { type JSX, useMemo } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDb } from '@/core/db/database';
+import { getCourse } from '@/core/db/repositories/courses';
 import { listPlayers } from '@/core/db/repositories/players';
 import { listRoundsForPlayer } from '@/core/db/repositories/rounds';
+import { getTee } from '@/core/db/repositories/tees';
+import { listTeeHoles } from '@/core/db/repositories/teeHoles';
+import { calculateExpectedScore } from '@/core/handicap';
 import { trackEvent } from '@/services/analytics';
-import { CREAM, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
+import { fetchAndStoreWeatherForRound } from '@/services/weather';
+import { ACCENT_GOLD, CREAM, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
+
+interface SummaryData {
+  round: NonNullable<ReturnType<typeof listRoundsForPlayer>[0]>;
+  expected: number;
+  actual: number;
+  parTotal: number;
+  courseLat: number | null;
+  courseLng: number | null;
+}
+
+function loadSummary(): SummaryData | null {
+  const db = getDb();
+  const player = listPlayers(db)[0];
+  if (player === undefined) return null;
+  const round = listRoundsForPlayer(db, player.id)[0];
+  if (round === undefined) return null;
+  const course = getCourse(db, round.course_id);
+  const tee = getTee(db, round.tee_id);
+  const teeHoles = tee !== null ? listTeeHoles(db, tee.id) : [];
+  const parTotal =
+    teeHoles.length > 0 ? teeHoles.reduce((s, h) => s + h.par, 0) : 72;
+  // Approximate the player's index from their course handicap on file.
+  const indexEstimate =
+    tee !== null
+      ? (round.course_handicap - (tee.course_rating - parTotal)) *
+        (113 / tee.slope_rating)
+      : round.course_handicap;
+  const expected = calculateExpectedScore(
+    indexEstimate,
+    tee?.course_rating ?? 72,
+    tee?.slope_rating ?? 113,
+    parTotal,
+    {
+      temperatureF: round.temperature_f,
+      windSpeedMph: round.wind_speed_mph,
+      condition: round.weather_condition,
+    },
+  );
+  return {
+    round,
+    expected,
+    actual: round.adjusted_gross_score ?? 0,
+    parTotal,
+    courseLat: course?.latitude ?? null,
+    courseLng: course?.longitude ?? null,
+  };
+}
 
 /**
  * Placeholder round-summary route. The full round-entry flow lives in a
- * future PR — this stub exists so the share trigger has somewhere to
- * live. It surfaces the most recent round and offers Save / Discard /
- * Share affordances.
+ * future PR — this stub exists so the share trigger has somewhere to live
+ * and the expected-vs-actual line has somewhere to render. Save fires a
+ * fire-and-forget weather fetch, then routes home.
  */
 export default function PlaySummary(): JSX.Element {
-  const round = useMemo(() => {
-    const db = getDb();
-    const player = listPlayers(db)[0];
-    if (player === undefined) return null;
-    return listRoundsForPlayer(db, player.id)[0] ?? null;
-  }, []);
+  const summary = useMemo(() => loadSummary(), []);
+  const round = summary?.round ?? null;
+
+  const expectedLine = ((): string | null => {
+    if (summary === null) return null;
+    const delta = summary.actual - summary.expected;
+    if (delta === 0) {
+      return `You shot ${summary.actual}. Right at expectations for the conditions.`;
+    }
+    const word = delta < 0 ? 'better' : 'worse';
+    const n = Math.abs(delta);
+    return `You shot ${summary.actual}. Expected ${summary.expected} in those conditions. ${n} stroke${n === 1 ? '' : 's'} ${word}.`;
+  })();
+
+  const onSave = (): void => {
+    if (round !== null) {
+      trackEvent('round_saved', {
+        numHolesPlayed: round.num_holes_played,
+        grossScore: round.adjusted_gross_score ?? 0,
+        scoreDifferential: round.score_differential,
+      });
+      // Fire-and-forget weather fetch when we have coordinates.
+      if (summary?.courseLat !== null && summary?.courseLng !== null) {
+        fetchAndStoreWeatherForRound(
+          round.id,
+          summary!.courseLat!,
+          summary!.courseLng!,
+          round.played_at,
+        );
+      }
+    }
+    router.push('/');
+  };
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: CREAM }}>
@@ -43,30 +122,48 @@ export default function PlaySummary(): JSX.Element {
         >
           Round saved
         </Text>
-        <Text
-          style={{
-            fontFamily: 'Inter_400Regular',
-            fontSize: 14,
-            color: MUTED_TEXT,
-            marginTop: 6,
-          }}
-        >
-          Round entry flow lands in a future PR — this is the share trigger surface.
-        </Text>
+        {expectedLine !== null ? (
+          <View style={{ marginTop: 14 }}>
+            <Text
+              style={{
+                fontFamily: 'Inter_500Medium',
+                fontSize: 11,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                color: ACCENT_GOLD,
+              }}
+            >
+              How you did
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Fraunces_500Medium',
+                fontSize: 18,
+                lineHeight: 26,
+                color: '#0F172A',
+                marginTop: 6,
+              }}
+            >
+              {expectedLine}
+            </Text>
+          </View>
+        ) : (
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 14,
+              color: MUTED_TEXT,
+              marginTop: 6,
+            }}
+          >
+            Round entry flow lands in a future PR — this is the share trigger surface.
+          </Text>
+        )}
 
         <View style={{ marginTop: 32, gap: 12 }}>
           <Pressable
             accessibilityRole="button"
-            onPress={() => {
-              if (round !== null) {
-                trackEvent('round_saved', {
-                  numHolesPlayed: round.num_holes_played,
-                  grossScore: round.adjusted_gross_score ?? 0,
-                  scoreDifferential: round.score_differential,
-                });
-              }
-              router.push('/');
-            }}
+            onPress={onSave}
             style={({ pressed }) => ({
               paddingVertical: 16,
               borderRadius: 14,
@@ -76,11 +173,7 @@ export default function PlaySummary(): JSX.Element {
             })}
           >
             <Text
-              style={{
-                fontFamily: 'Inter_500Medium',
-                fontSize: 15,
-                color: 'white',
-              }}
+              style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: 'white' }}
             >
               Save
             </Text>
@@ -107,11 +200,7 @@ export default function PlaySummary(): JSX.Element {
             })}
           >
             <Text
-              style={{
-                fontFamily: 'Inter_500Medium',
-                fontSize: 15,
-                color: '#0F172A',
-              }}
+              style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: '#0F172A' }}
             >
               Discard
             </Text>

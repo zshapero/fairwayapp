@@ -56,3 +56,21 @@ export const DEMO_RECOMMENDATIONS: Recommendation[] = [
     body: 'Two weeks ago — your lowest index on record.',
   },
 ];
+
+/**
+ * Rule #17 (weather-aware) — surfaced when a player's last 10 rounds show
+ * a mild-vs-windy gap of more than 4 strokes (with 4+ rounds in each
+ * bucket). Built dynamically rather than baked into DEMO_RECOMMENDATIONS
+ * because it depends on actual round + weather data.
+ */
+export function buildWeatherAwareRecommendation(delta: number): Recommendation {
+  return {
+    key: 'weather_aware_performance',
+    kind: 'opportunity',
+    title: 'The wind has been a problem',
+    body: `Your scoring runs about ${delta.toFixed(1)} strokes worse on windy days than on calm ones.`,
+    suggestion:
+      'On windy days, club up one and swing 80%. Trying to power through wind is the most common amateur mistake. Take what the conditions give you.',
+    confidence: 'high',
+  };
+}

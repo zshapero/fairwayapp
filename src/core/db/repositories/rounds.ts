@@ -16,7 +16,9 @@ export interface RoundInputRow {
 
 const SELECT =
   `SELECT id, player_id, course_id, tee_id, played_at, num_holes_played, pcc,
-          course_handicap, adjusted_gross_score, score_differential, notes, created_at
+          course_handicap, adjusted_gross_score, score_differential, notes, created_at,
+          temperature_f, wind_speed_mph, wind_direction, precipitation_mm,
+          weather_condition, weather_fetched_at
      FROM rounds`;
 
 export function createRound(db: Db, input: RoundInputRow): Round {
@@ -109,6 +111,61 @@ export function updateRound(db: Db, id: number, patch: RoundPatch): Round | null
 
 export function deleteRound(db: Db, id: number): void {
   db.runSync('DELETE FROM rounds WHERE id = ?', [id]);
+}
+
+export interface WeatherUpdate {
+  temperature_f: number | null;
+  wind_speed_mph: number | null;
+  wind_direction: string | null;
+  precipitation_mm: number | null;
+  weather_condition: string | null;
+}
+
+/**
+ * Persist a weather observation onto a round and stamp weather_fetched_at
+ * (epoch ms) so backfill can skip it next time.
+ */
+export function setRoundWeather(
+  db: Db,
+  id: number,
+  patch: WeatherUpdate,
+): Round | null {
+  db.runSync(
+    `UPDATE rounds SET
+       temperature_f = ?,
+       wind_speed_mph = ?,
+       wind_direction = ?,
+       precipitation_mm = ?,
+       weather_condition = ?,
+       weather_fetched_at = ?
+     WHERE id = ?`,
+    [
+      patch.temperature_f,
+      patch.wind_speed_mph,
+      patch.wind_direction,
+      patch.precipitation_mm,
+      patch.weather_condition,
+      Date.now(),
+      id,
+    ],
+  );
+  return getRound(db, id);
+}
+
+/** Mark a round as having tried-and-failed weather fetch so we don't loop. */
+export function markRoundWeatherUnavailable(db: Db, id: number): void {
+  db.runSync(
+    'UPDATE rounds SET weather_fetched_at = ? WHERE id = ?',
+    [Date.now(), id],
+  );
+}
+
+/** Rounds whose weather hasn't been fetched yet (regardless of player). */
+export function listRoundsNeedingWeather(db: Db, limit = 50): Round[] {
+  return db.getAllSync<Round>(
+    `${SELECT} WHERE weather_fetched_at IS NULL ORDER BY played_at DESC LIMIT ?`,
+    [limit],
+  );
 }
 
 export function countRounds(db: Db): number {

@@ -22,6 +22,8 @@ interface DemoCourse {
   state: string;
   country: string;
   num_holes: 18;
+  latitude: number;
+  longitude: number;
   tees: DemoTee[];
 }
 
@@ -36,6 +38,8 @@ const PEBBLE_BEACH: DemoCourse = {
   state: 'CA',
   country: 'USA',
   num_holes: 18,
+  latitude: 36.5683,
+  longitude: -121.9485,
   tees: [
     {
       tee_name: 'Black',
@@ -77,6 +81,8 @@ const MUNI: DemoCourse = {
   state: 'IL',
   country: 'USA',
   num_holes: 18,
+  latitude: 39.7817,
+  longitude: -89.6501,
   tees: [
     {
       tee_name: 'White',
@@ -135,6 +141,8 @@ export function seedDemoData(db: Db): { coursesAdded: number } {
       state: demo.state,
       country: demo.country,
       num_holes: demo.num_holes,
+      latitude: demo.latitude,
+      longitude: demo.longitude,
     });
     for (const tee of demo.tees) {
       const created = createTee(db, {
