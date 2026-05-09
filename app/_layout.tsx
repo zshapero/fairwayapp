@@ -18,6 +18,8 @@ import { getDb } from '@/core/db/database';
 import { seedDevContent } from '@/core/db/devSeed';
 import { queryClient } from '@/core/db/queryClient';
 import { listPlayers } from '@/core/db/repositories/players';
+import { initPosthog, trackEvent } from '@/services/analytics';
+import { initSentry, logError } from '@/services/errorReporting';
 import '../global.css';
 
 export default function RootLayout(): JSX.Element | null {
@@ -32,9 +34,13 @@ export default function RootLayout(): JSX.Element | null {
   const [seedReady, setSeedReady] = useState(false);
 
   useEffect(() => {
+    initSentry();
+    void initPosthog();
+    trackEvent('app_opened', {});
     try {
       seedDevContent(getDb());
-    } catch {
+    } catch (e) {
+      logError(e, { scope: 'devSeed' });
       // DB seed failures shouldn't block the app — UI can render empty states.
     } finally {
       setSeedReady(true);

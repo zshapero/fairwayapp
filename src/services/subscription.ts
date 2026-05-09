@@ -27,7 +27,11 @@ function readPlayer(): Player | null {
   try {
     const player = listPlayers(getDb())[0];
     return player ?? null;
-  } catch {
+  } catch (e) {
+    // Lazy import to avoid an analytics → subscription → analytics cycle.
+    void import('./errorReporting').then((mod) =>
+      mod.logError(e, { scope: 'subscription.readPlayer' }),
+    );
     return null;
   }
 }

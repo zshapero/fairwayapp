@@ -19,6 +19,7 @@ import { countTeeHoles } from '@/core/db/repositories/teeHoles';
 import { countRounds } from '@/core/db/repositories/rounds';
 import { countHoleScores } from '@/core/db/repositories/holeScores';
 import { countHandicapSnapshots } from '@/core/db/repositories/handicapSnapshots';
+import { _devTriggerSentryError } from '@/services/errorReporting';
 
 interface Counts {
   players: number;
@@ -218,6 +219,21 @@ export default function Debug(): JSX.Element {
           disabled={busy}
           tone="neutral"
         />
+        {typeof __DEV__ !== 'undefined' && __DEV__ ? (
+          <DebugButton
+            label="Throw test error (Sentry)"
+            onPress={() => {
+              const id = _devTriggerSentryError();
+              setMessage(
+                id !== null
+                  ? `Sentry captured event ${id}.`
+                  : 'No Sentry DSN configured — set EXPO_PUBLIC_SENTRY_DSN.',
+              );
+            }}
+            disabled={busy}
+            tone="neutral"
+          />
+        ) : null}
       </View>
 
       {message !== null ? (

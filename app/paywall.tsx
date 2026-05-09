@@ -7,10 +7,11 @@ import {
   Star,
   type IconProps,
 } from 'phosphor-react-native';
-import type { ComponentType, JSX } from 'react';
+import { type ComponentType, type JSX, useEffect } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PaperTexture } from '@/components/round-detail/PaperTexture';
+import { trackEvent } from '@/services/analytics';
 import { setMockSubscriptionTier } from '@/services/subscription';
 import {
   ACCENT_GOLD,
@@ -163,7 +164,12 @@ function PriceButton({
 export default function Paywall(): JSX.Element {
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    trackEvent('paywall_shown', { source: 'other' });
+  }, []);
+
   const startPurchase = (cadence: 'monthly' | 'yearly'): void => {
+    trackEvent('paywall_purchase_tapped', { tier: cadence });
     Alert.alert(
       'Subscriptions launching soon.',
       `You'll be the first to know about ${cadence} pricing.`,
@@ -173,6 +179,7 @@ export default function Paywall(): JSX.Element {
           onPress: () => {
             // Dev-only stub: flip the tier so we can exercise premium flows.
             setMockSubscriptionTier('premium');
+            trackEvent('premium_unlocked', { source: 'mock' });
             queryClient.invalidateQueries({ queryKey: ['subscription', 'player'] });
             router.back();
           },

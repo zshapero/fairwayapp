@@ -7,6 +7,8 @@ import {
   listPlayers,
   setOnboardingComplete,
 } from '@/core/db/repositories/players';
+import { identifyUser, trackEvent } from '@/services/analytics';
+import { setSentryUser } from '@/services/errorReporting';
 import { CREAM, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
 export default function Finish(): JSX.Element {
@@ -15,6 +17,11 @@ export default function Finish(): JSX.Element {
     const player = listPlayers(db)[0];
     if (player !== undefined) {
       setOnboardingComplete(db, player.id, player.home_course_id);
+      identifyUser(player.id);
+      setSentryUser(player.id);
+      trackEvent('onboarding_completed', {
+        homeCourseSelected: player.home_course_id !== null,
+      });
     }
     router.replace('/');
   };

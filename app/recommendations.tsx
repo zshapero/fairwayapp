@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, router } from 'expo-router';
 import { Lock } from 'phosphor-react-native';
-import { type JSX, useCallback, useMemo, useState } from 'react';
+import { type JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfidencePill } from '@/components/recommendations/ConfidencePill';
@@ -16,6 +16,8 @@ import { useRefresh } from '@/components/PullToRefresh';
 import { getDb } from '@/core/db/database';
 import { hasLoggedRecently, logDrill } from '@/core/db/repositories/drillLog';
 import { listPlayers } from '@/core/db/repositories/players';
+import { trackEvent } from '@/services/analytics';
+import { logError } from '@/services/errorReporting';
 import { useSubscription } from '@/services/subscription';
 import {
   ACCENT_GOLD,
@@ -41,6 +43,9 @@ export default function Recommendations(): JSX.Element {
 
 function TeaserScreen(): JSX.Element {
   const { refreshControl } = useRefresh();
+  useEffect(() => {
+    trackEvent('paywall_shown', { source: 'recommendations_teaser' });
+  }, []);
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: CREAM }}>
       <Header />
@@ -259,10 +264,15 @@ function PremiumRecommendations(): JSX.Element {
   const onPracticed = useCallback(
     (key: string) => {
       if (player === null) return;
-      logDrill(getDb(), { player_id: player.id, recommendation_key: key });
-      initialLogged.add(key);
-      queryClient.invalidateQueries({ queryKey: ['drill-log', player.id] });
-      force((n) => n + 1);
+      try {
+        logDrill(getDb(), { player_id: player.id, recommendation_key: key });
+        trackEvent('drill_practiced', { recommendationKey: key });
+        initialLogged.add(key);
+        queryClient.invalidateQueries({ queryKey: ['drill-log', player.id] });
+        force((n) => n + 1);
+      } catch (e) {
+        logError(e, { scope: 'recommendations.drill', tags: { key } });
+      }
     },
     [player, queryClient, initialLogged],
   );

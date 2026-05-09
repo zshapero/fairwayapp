@@ -1,10 +1,14 @@
 import { router } from 'expo-router';
-import type { JSX } from 'react';
+import { type JSX, useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { trackEvent } from '@/services/analytics';
 import { CREAM, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
 export default function Welcome(): JSX.Element {
+  useEffect(() => {
+    trackEvent('onboarding_started', {});
+  }, []);
   return (
     <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: CREAM }}>
       <View style={{ flex: 1, paddingHorizontal: 32, justifyContent: 'center' }}>

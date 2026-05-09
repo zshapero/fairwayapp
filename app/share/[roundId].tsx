@@ -19,6 +19,8 @@ import {
   captureAndShare,
   captureAndSaveToPhotos,
 } from '@/services/roundShare';
+import { trackEvent } from '@/services/analytics';
+import { logError } from '@/services/errorReporting';
 import { CREAM, MASTERS_GREEN, MUTED_TEXT } from '@/theme/colors';
 
 const PREVIEW_WIDTH = 320;
@@ -65,11 +67,13 @@ export default function ShareRound(): JSX.Element {
       if (!result.shared) {
         Alert.alert('Sharing unavailable', 'Try Save to Photos instead.');
       } else {
+        trackEvent('round_shared', { shareType: 'image' });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
           () => undefined,
         );
       }
     } catch (e) {
+      logError(e, { scope: 'share.capture' });
       Alert.alert(
         'Could not share',
         e instanceof Error ? e.message : String(e),
@@ -94,11 +98,13 @@ export default function ShareRound(): JSX.Element {
         );
         return;
       }
+      trackEvent('round_shared', { shareType: 'image' });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => undefined,
       );
       Alert.alert('Saved to Photos');
     } catch (e) {
+      logError(e, { scope: 'share.saveToPhotos' });
       Alert.alert(
         'Could not save',
         e instanceof Error ? e.message : String(e),
