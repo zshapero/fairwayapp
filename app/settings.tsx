@@ -252,7 +252,9 @@ export default function Settings(): JSX.Element {
           />
           <SettingsRow
             title="Send feedback"
-            onPress={() => Linking.openURL('mailto:hello@fairway.app')}
+            onPress={() =>
+              Linking.openURL('mailto:hello@fairway.app').catch(() => undefined)
+            }
           />
           <SettingsRow
             title="Privacy policy"
